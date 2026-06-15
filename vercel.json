@@ -1,11 +1,22 @@
 {
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs20.x"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "*.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "**/*.(js|css|png|jpg|jpeg|svg|gif|ico|json)",
+      "use": "@vercel/static"
     }
-  },
-  "rewrites": [
-    { "source": "/api/utilisateurs/:id", "destination": "/api/utilisateurs/[id]" },
-    { "source": "/((?!api/).*)",         "destination": "/index.html" }
+  ],
+  "routes": [
+    { "src": "/api/utilisateurs/([^/]+)", "dest": "/api/utilisateurs/[id].js" },
+    { "src": "/api/utilisateurs", "dest": "/api/utilisateurs.js" },
+    { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
