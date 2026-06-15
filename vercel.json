@@ -6,17 +6,18 @@
       "use": "@vercel/node"
     },
     {
-      "src": "*.html",
+      "src": "index.html",
       "use": "@vercel/static"
     },
     {
-      "src": "**/*.(js|css|png|jpg|jpeg|svg|gif|ico|json)",
+      "src": "**/*.(js|css|png|jpg|jpeg|svg|gif|ico|json|woff|woff2|ttf)",
       "use": "@vercel/static"
     }
   ],
   "routes": [
     { "src": "/api/utilisateurs/([^/]+)", "dest": "/api/utilisateurs/[id].js" },
     { "src": "/api/utilisateurs", "dest": "/api/utilisateurs.js" },
+    { "src": "^/(?!api/).*\\.(js|css|png|jpg|jpeg|svg|gif|ico|json|woff|woff2|ttf)$", "dest": "/$0" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]
 }
