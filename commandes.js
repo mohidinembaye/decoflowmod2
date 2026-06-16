@@ -1,412 +1,329 @@
-import { afficherPageDashboard }  from './dashboard.js';
-import { afficherPageCategories } from './categories.js';
-import { afficherPageProfil }     from './profil.js';
-import { afficherPageDevis }      from './devis.js';
-import { afficherPageProduits }   from './produits.js';
-import { afficherPageClients }    from './clients.js';
 import { attacherNavigationNavbar } from './navigation.js';
+import {
+  lireSession,
+  recupererCommandesUtilisateur,
+  recupererToutesLesCommandes,
+  modifierStatutCommande
+} from './db.js';
 
+// ─── Déclarations ─────────────────────────────────────────────────────────────
 
+var STATUTS_COMMANDE = ['En préparation', 'Expédié', 'Livré', 'Annulé'];
 
-// ─── Données ──────────────────────────────────────────────────────────────────
-
-var donneesCommandes = [
-  { id: 'DF-2024-089', client: 'Awa Diop',      initiales: 'AD', couleurAvatar: 'bg-[#C4A882]', projet: 'Villa Almadies Nord',   date: '14 Mars 2024', montant: 2450000, statut: 'en-preparation' },
-  { id: 'DF-2024-088', client: 'Moussa Ndiaye',  initiales: 'MN', couleurAvatar: 'bg-[#2C2A27]', projet: 'Penthouse Plateau',     date: '12 Mars 2024', montant: 8300000, statut: 'en-preparation' },
-  { id: 'DF-2024-087', client: 'Fatou Sy',       initiales: 'FS', couleurAvatar: 'bg-[#C97B5A]', projet: 'Boutique Concept Rufisque', date: '10 Mars 2024', montant: 1200000, statut: 'livre' },
-  { id: 'DF-2024-086', client: 'Ibrahima Bâ',   initiales: 'IB', couleurAvatar: 'bg-[#E8A882]', projet: 'Résidence Saint-Louis', date: '08 Mars 2024', montant: 5400000, statut: 'retard' },
-  { id: 'DF-2024-085', client: 'Khadija Fall',   initiales: 'KF', couleurAvatar: 'bg-[#9B9589]', projet: 'Bureau Ngor',           date: '05 Mars 2024', montant: 850000,  statut: 'en-livraison' },
-  { id: 'DF-2024-084', client: 'Omar Sarr',      initiales: 'OS', couleurAvatar: 'bg-[#C4A882]', projet: 'Loft Médina',           date: '03 Mars 2024', montant: 3100000, statut: 'livre' },
-  { id: 'DF-2024-083', client: 'Aïssatou Diallo', initiales: 'AD', couleurAvatar: 'bg-[#F2DDD0]', projet: 'Appartement Fann',     date: '01 Mars 2024', montant: 920000,  statut: 'en-preparation' },
-  { id: 'DF-2024-082', client: 'Seydou Mbaye',   initiales: 'SM', couleurAvatar: 'bg-[#2C2A27]', projet: 'Villa Saly',           date: '28 Fév. 2024', montant: 6700000, statut: 'en-livraison' },
-];
-
-var filtreStatutActif = 'tous';
-var filtreRechercheCommandes = '';
-var pageActuelle = 1;
-var commandesParPage = 5;
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
-var libelles = {
-  'tous':           'Tous',
-  'en-preparation': 'En préparation',
-  'en-livraison':   'En livraison',
-  'livre':          'Livré',
-  'retard':         'Retard',
+var COULEURS_STATUT = {
+  'En préparation': 'bg-orange-50 text-orange-600',
+  'Expédié':        'bg-blue-50 text-blue-600',
+  'Livré':          'bg-green-50 text-green-600',
+  'Annulé':         'bg-red-50 text-red-600'
 };
 
-var couleursStatut = {
-  'en-preparation': { fond: 'bg-[#FFF3E8]', texte: 'text-[#C97B5A]' },
-  'en-livraison':   { fond: 'bg-[#E8F4FF]', texte: 'text-blue-600'  },
-  'livre':          { fond: 'bg-[#E8F8EE]', texte: 'text-green-600' },
-  'retard':         { fond: 'bg-[#FFEAEA]', texte: 'text-red-500'   },
-};
+// ─── Rendu page ───────────────────────────────────────────────────────────────
 
-function badgeStatut(statut) {
-  var c = couleursStatut[statut] || { fond: 'bg-gray-100', texte: 'text-gray-500' };
-  return `<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold uppercase tracking-wider ${c.fond} ${c.texte}">${libelles[statut] || statut}</span>`;
-}
-
-function formaterMontant(valeur) {
-  return valeur.toLocaleString('fr-FR') + ' FCFA';
-}
-
-function filtrerCommandes() {
-  return donneesCommandes.filter(function(cmd) {
-    var correspondStatut =
-      filtreStatutActif === 'tous' || cmd.statut === filtreStatutActif;
-
-    var correspondRecherche =
-      filtreRechercheCommandes === '' ||
-      cmd.client.toLowerCase().includes(filtreRechercheCommandes.toLowerCase()) ||
-      cmd.id.toLowerCase().includes(filtreRechercheCommandes.toLowerCase()) ||
-      cmd.projet.toLowerCase().includes(filtreRechercheCommandes.toLowerCase());
-
-    return correspondStatut && correspondRecherche;
-  });
-}
-
-// ─── Affichage principal ──────────────────────────────────────────────────────
-
-export function afficherPageCommandes(prenomUtilisateur) {
+export async function afficherPageCommandes(prenomUtilisateur) {
   history.pushState({ page: 'commandes', nom: prenomUtilisateur }, '', '#commandes');
 
+  var session = lireSession();
+  if (!session) {
+    if (window.decoflowRouter) window.decoflowRouter.naviguerVers('connexion');
+    return;
+  }
+
+  var prenom   = prenomUtilisateur || session.nom || 'Utilisateur';
+  var role     = session.role;
+  var estAdmin = (role === 'admin' || role === 'superadmin');
+
   var conteneurApp = document.getElementById('app');
-  var prenom = prenomUtilisateur || 'Utilisateur';
-
-  filtreStatutActif        = 'tous';
-  filtreRechercheCommandes = '';
-  pageActuelle             = 1;
-
-  conteneurApp.className = 'w-full';
-
   document.getElementById('corps-application').className =
     'font-body bg-beige min-h-screen block p-0 transition-all duration-300';
+  conteneurApp.className = 'w-full';
 
   conteneurApp.innerHTML = `
-    <div id="page-commandes" class="animer-fond w-full min-h-screen bg-beige flex flex-col">
+    <div class="animer-fond w-full min-h-screen bg-beige flex flex-col">
+      <header id="navbar" class="bg-charcoal px-4 sm:px-6 py-3 sticky top-0 z-50"></header>
 
-      <!-- ── Navbar ── -->
-      <header id="navbar" class="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
+      <main class="flex-1 px-6 py-8 max-w-6xl mx-auto w-full">
 
-        <div id="navbar-logo" class="flex items-center gap-2 mr-10">
-          <img src="LOGOD.png" alt="DecoFlow" class="h-8" />
-          <span class="font-display text-2xl font-semibold text-charcoal tracking-wide">DecoFlow</span>
-        </div>
-
-        <nav id="navbar-nav" class="hidden md:flex items-center gap-1 flex-1">
-          <a id="nav-dashboard"  href="#" class="nav-lien px-3 py-1.5 text-sm text-muted hover:text-charcoal border-b-2 border-transparent hover:border-terra-light transition">Dashboard</a>
-          <a id="nav-produits"   href="#" class="nav-lien px-3 py-1.5 text-sm text-muted hover:text-charcoal border-b-2 border-transparent hover:border-terra-light transition">Produits</a>
-          <a id="nav-categories" href="#" class="nav-lien px-3 py-1.5 text-sm text-muted hover:text-charcoal border-b-2 border-transparent hover:border-terra-light transition">Catégories</a>
-          <a id="nav-orders"     href="#" class="nav-lien px-3 py-1.5 text-sm font-medium text-charcoal border-b-2 border-terracotta">Commandes</a>
-          <a id="nav-quotes"     href="#" class="nav-lien px-3 py-1.5 text-sm text-muted hover:text-charcoal border-b-2 border-transparent hover:border-terra-light transition">Devis</a>
-          <a id="nav-customers"  href="#" class="nav-lien px-3 py-1.5 text-sm text-muted hover:text-charcoal border-b-2 border-transparent hover:border-terra-light transition">Clients</a>
-        </nav>
-
-        <div id="navbar-droite" class="flex items-center gap-4">
-          <button type="button" aria-label="Rechercher" class="text-muted hover:text-charcoal transition">
-            <i class="fa-solid fa-magnifying-glass text-sm"></i>
-          </button>
-          <div id="profil-utilisateur" class="flex items-center gap-2 cursor-pointer">
-            <span class="text-sm font-medium text-charcoal hidden sm:block">${prenom}</span>
-            <div class="w-8 h-8 rounded-full bg-terra-pale flex items-center justify-center overflow-hidden">
-              <i class="fa-solid fa-user text-terracotta text-sm"></i>
-            </div>
-          </div>
-        </div>
-
-      </header>
-
-      <!-- ── Contenu ── -->
-      <main id="contenu-commandes" class="flex-1 px-6 py-8 max-w-6xl mx-auto w-full">
-
-        <!-- En-tête section -->
-        <div class="mb-6 border border-dashed border-gray-200 rounded-xl p-6 bg-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div class="mb-6 flex items-start justify-between gap-4 flex-wrap">
           <div>
-            <h1 class="font-display text-4xl font-semibold text-charcoal mb-1">Gestion des Commandes</h1>
-            <p class="text-sm text-muted">Atelier de gestion</p>
+            <p class="text-xs text-terracotta uppercase tracking-widest font-semibold mb-1">
+              ${estAdmin ? 'Gestion' : 'Mon espace'}
+            </p>
+            <h1 class="font-display text-4xl font-semibold text-charcoal">
+              ${estAdmin ? 'Toutes les commandes' : 'Mes commandes'}
+            </h1>
           </div>
-          <button id="bouton-nouvelle-commande" type="button"
-            class="flex items-center gap-2 bg-charcoal text-white text-xs uppercase tracking-widest px-5 py-3 hover:bg-terracotta transition-colors duration-200 whitespace-nowrap self-start">
-            <i class="fa-solid fa-plus text-xs"></i> Nouvelle Commande
-          </button>
+          <div class="flex items-center gap-3">
+            ${estAdmin ? `
+              <div class="flex gap-2">
+                <select id="filtre-statut-commandes" class="border border-gray-200 rounded-lg px-3 py-2 text-xs text-charcoal bg-white focus:outline-none focus:border-terracotta">
+                  <option value="">Tous les statuts</option>
+                  ${STATUTS_COMMANDE.map(function(s) { return '<option value="' + s + '">' + s + '</option>'; }).join('')}
+                </select>
+              </div>
+            ` : ''}
+            <button id="rafraichir-commandes" class="text-xs text-muted hover:text-charcoal flex items-center gap-1.5 border border-gray-200 rounded-lg px-3 py-2 bg-white">
+              <i class="fa-solid fa-rotate"></i> Actualiser
+            </button>
+          </div>
         </div>
 
-        <!-- KPI -->
-        <div id="section-kpi-commandes" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+        ${estAdmin ? `
+          <div id="stats-commandes" class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6"></div>
+        ` : ''}
 
-          <div class="bg-white rounded-xl p-5 border border-gray-100">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs text-muted uppercase tracking-wider">Commandes en cours</span>
-              <span class="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-semibold">+12% vs hier</span>
-            </div>
-            <div class="flex items-end gap-1">
-              <i class="fa-regular fa-calendar text-muted text-sm mb-1"></i>
-            </div>
-            <p class="text-3xl font-semibold text-charcoal font-display">24</p>
-            <p class="text-xs text-muted mt-1">Commandes en cours</p>
-          </div>
-
-          <div class="bg-white rounded-xl p-5 border border-gray-100">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs text-muted uppercase tracking-wider">Livrées ce mois</span>
-              <span class="text-[10px] bg-[#FFF3E8] text-terracotta px-2 py-0.5 rounded-full font-semibold">Objectif 81%</span>
-            </div>
-            <div class="flex items-end gap-1">
-              <i class="fa-regular fa-square-check text-muted text-sm mb-1"></i>
-            </div>
-            <p class="text-3xl font-semibold text-charcoal font-display">156</p>
-            <p class="text-xs text-muted mt-1">Livrées ce mois</p>
-          </div>
-
-          <div class="bg-white rounded-xl p-5 border border-gray-100">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs text-muted uppercase tracking-wider">Valeur Totale</span>
-              <span class="text-[10px] bg-gray-100 text-muted px-2 py-0.5 rounded-full font-semibold">Derniers 30 jours</span>
-            </div>
-            <div class="flex items-end gap-1">
-              <i class="fa-regular fa-credit-card text-muted text-sm mb-1"></i>
-            </div>
-            <p class="text-3xl font-semibold text-charcoal font-display">12.450.000</p>
-            <p class="text-xs text-muted mt-1">Valeur Totale (FCFA)</p>
-          </div>
-
+        <div id="liste-commandes" class="flex flex-col gap-3">
+          <p class="text-sm text-muted text-center py-10">Chargement…</p>
         </div>
-
-        <!-- Barre de recherche + filtres statut -->
-        <div class="bg-white border border-gray-100 rounded-xl px-5 py-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-
-          <div class="relative flex-1 max-w-xs">
-            <span class="absolute inset-y-0 left-3 flex items-center text-muted pointer-events-none">
-              <i class="fa-solid fa-magnifying-glass text-xs"></i>
-            </span>
-            <input id="champ-recherche-commandes" type="text" placeholder="Rechercher une commande, un client…"
-              class="w-full border border-gray-200 rounded-lg pl-8 pr-4 py-2 text-xs text-charcoal placeholder-gray-400 bg-beige/40 focus:outline-none focus:border-terracotta transition" />
-          </div>
-
-          <div id="filtres-statut-commandes" class="flex items-center gap-1 flex-wrap">
-            <button data-statut="tous"           type="button" class="btn-statut px-3 py-1.5 text-xs rounded-md font-medium bg-charcoal text-white transition">Tous</button>
-            <button data-statut="en-preparation" type="button" class="btn-statut px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition">En préparation</button>
-            <button data-statut="en-livraison"   type="button" class="btn-statut px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition">En livraison</button>
-            <button data-statut="livre"          type="button" class="btn-statut px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition">Livré</button>
-          </div>
-
-        </div>
-
-        <!-- Tableau des commandes -->
-        <div class="bg-white border border-dashed border-gray-200 rounded-xl overflow-hidden mb-4">
-
-          <!-- En-tête tableau -->
-          <div class="grid grid-cols-[1fr_1.2fr_1.4fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-3 border-b border-gray-100 text-[10px] font-semibold text-muted uppercase tracking-wider">
-            <span>N° Commande</span>
-            <span>Client</span>
-            <span>Projet</span>
-            <span>Date</span>
-            <span>Montant (FCFA)</span>
-            <span>Statut</span>
-            <span>Actions</span>
-          </div>
-
-          <!-- Lignes dynamiques -->
-          <div id="corps-tableau-commandes"></div>
-
-          <!-- Pied tableau -->
-          <div id="pied-tableau-commandes" class="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
-            <p id="compteur-commandes" class="text-xs text-muted"></p>
-            <div id="pagination-commandes" class="flex items-center gap-1"></div>
-          </div>
-
-        </div>
-
       </main>
 
-      <!-- ── Footer ── -->
-      <footer id="footer" class="bg-white border-t border-gray-100 mt-auto">
-        <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div class="flex items-center gap-2">
-            <span class="font-display text-lg font-semibold text-charcoal">DecoFlow</span>
-            <span class="text-xs text-muted">© 2024 DecoFlow. L'excellence de design sénégalaise.</span>
-          </div>
-          <nav class="flex items-center gap-5">
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Mentions Légales</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Confidentialité</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Aide</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Contact</a>
-          </nav>
-        </div>
-      </footer>
-
+      <div id="toast-zone" class="fixed bottom-6 right-6 z-[200] flex flex-col gap-2"></div>
     </div>
   `;
 
-  rendreTableauCommandes();
-  attacherEcouteursCommandes(prenom);
   attacherNavigationNavbar(prenom);
+  await chargerCommandes(session, estAdmin);
+  attacherEcouteursCommandes(session, estAdmin);
 }
 
+// ─── Chargement ───────────────────────────────────────────────────────────────
 
-// ─── Rendu tableau ────────────────────────────────────────────────────────────
+async function chargerCommandes(session, estAdmin) {
+  var filtre = '';
+  var selectFiltre = document.getElementById('filtre-statut-commandes');
+  if (selectFiltre) filtre = selectFiltre.value;
 
-function rendreTableauCommandes() {
-  var corps       = document.getElementById('corps-tableau-commandes');
-  var compteur    = document.getElementById('compteur-commandes');
-  var pagination  = document.getElementById('pagination-commandes');
+  var commandes = estAdmin
+    ? await recupererToutesLesCommandes()
+    : await recupererCommandesUtilisateur(session.id);
 
-  if (!corps) return;
+  if (filtre) {
+    commandes = commandes.filter(function(c) { return c.statut === filtre; });
+  }
 
-  var commandesFiltrees = filtrerCommandes();
-  var total             = commandesFiltrees.length;
-  var debut             = (pageActuelle - 1) * commandesParPage;
-  var fin               = Math.min(debut + commandesParPage, total);
-  var commandesPage     = commandesFiltrees.slice(debut, fin);
-  var totalPages        = Math.max(1, Math.ceil(total / commandesParPage));
+  if (estAdmin) rendreStatsCommandes(commandes);
 
-  corps.innerHTML = '';
+  var liste = document.getElementById('liste-commandes');
+  if (!liste) return;
 
-  if (commandesPage.length === 0) {
-    var ligneVide = document.createElement('div');
-    ligneVide.className = 'px-6 py-12 text-center text-sm text-muted';
-    ligneVide.textContent = 'Aucune commande trouvée.';
-    corps.appendChild(ligneVide);
-  } else {
-    commandesPage.forEach(function(cmd) {
-      var ligne = document.createElement('div');
-      ligne.className = 'grid grid-cols-[1fr_1.2fr_1.4fr_1fr_1.2fr_1fr_auto] gap-4 px-6 py-4 border-b border-gray-50 hover:bg-beige/30 transition items-center';
-      ligne.setAttribute('data-id', cmd.id);
+  if (commandes.length === 0) {
+    liste.innerHTML = `
+      <div class="bg-white border border-dashed border-gray-200 rounded-xl p-10 text-center">
+        <i class="fa-solid fa-box-open text-4xl text-terra-light mb-4 block"></i>
+        <h2 class="font-display text-2xl text-charcoal mb-2">Aucune commande</h2>
+        <p class="text-sm text-muted">
+          ${estAdmin ? "Aucune commande ne correspond à ce filtre." : "Vous n'avez pas encore passé de commande."}
+        </p>
+        ${!estAdmin ? `
+          <button id="aller-produits-cmd" class="mt-5 bg-charcoal text-white text-xs uppercase tracking-widest px-6 py-3 hover:bg-terracotta transition inline-block">
+            Parcourir le catalogue
+          </button>
+        ` : ''}
+      </div>
+    `;
+    var btnProduits = document.getElementById('aller-produits-cmd');
+    if (btnProduits) {
+      btnProduits.addEventListener('click', function() {
+        if (window.decoflowRouter) window.decoflowRouter.naviguerVers('produits');
+      });
+    }
+    return;
+  }
 
-      ligne.innerHTML = `
-        <span class="text-xs font-semibold text-charcoal">#${cmd.id}</span>
+  liste.innerHTML = '';
+  commandes.forEach(function(cmd) {
+    liste.appendChild(creerCarteCommande(cmd, estAdmin));
+  });
+}
 
-        <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-full ${cmd.couleurAvatar} flex items-center justify-center flex-shrink-0">
-            <span class="text-[10px] font-bold text-white">${cmd.initiales}</span>
-          </div>
-          <span class="text-xs text-charcoal truncate">${cmd.client}</span>
+// ─── Stats admin ──────────────────────────────────────────────────────────────
+
+function rendreStatsCommandes(commandes) {
+  var zone = document.getElementById('stats-commandes');
+  if (!zone) return;
+
+  var totalRevenu = commandes.reduce(function(s, c) { return s + (c.total || 0); }, 0);
+  var nbEnCours   = commandes.filter(function(c) { return c.statut === 'En préparation'; }).length;
+  var nbExpedies  = commandes.filter(function(c) { return c.statut === 'Expédié'; }).length;
+  var nbLivres    = commandes.filter(function(c) { return c.statut === 'Livré'; }).length;
+
+  var stats = [
+    { label: 'Total commandes', valeur: commandes.length,                     icone: 'fa-solid fa-receipt',         couleur: 'text-charcoal' },
+    { label: 'En préparation',  valeur: nbEnCours,                            icone: 'fa-solid fa-clock',           couleur: 'text-orange-500' },
+    { label: 'Expédiées',       valeur: nbExpedies,                           icone: 'fa-solid fa-truck',           couleur: 'text-blue-500' },
+    { label: 'Chiffre d\'affaires', valeur: totalRevenu.toLocaleString('fr-FR') + ' Fcfa', icone: 'fa-solid fa-coins', couleur: 'text-terracotta' }
+  ];
+
+  zone.innerHTML = stats.map(function(s) {
+    return `
+      <div class="bg-white border border-gray-100 rounded-xl px-4 py-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-lg bg-beige flex items-center justify-center flex-shrink-0">
+          <i class="${s.icone} ${s.couleur} text-sm"></i>
+        </span>
+        <div>
+          <p class="text-xs text-muted">${s.label}</p>
+          <p class="font-display text-lg font-semibold text-charcoal">${s.valeur}</p>
         </div>
+      </div>
+    `;
+  }).join('');
+}
 
-        <span class="text-xs text-muted truncate">${cmd.projet}</span>
-        <span class="text-xs text-muted">${cmd.date}</span>
-        <span class="text-xs font-semibold text-charcoal">${formaterMontant(cmd.montant)}</span>
+// ─── Carte commande ───────────────────────────────────────────────────────────
 
-        <div>${badgeStatut(cmd.statut)}</div>
+function creerCarteCommande(cmd, estAdmin) {
+  var carte = document.createElement('div');
+  carte.className = 'bg-white border border-gray-100 rounded-xl overflow-hidden';
 
-        <div class="flex items-center">
-          <button class="btn-actions-commande text-muted hover:text-charcoal transition p-1" data-id="${cmd.id}" type="button" title="Actions">
-            <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+  var date = new Date(cmd.dateCommande);
+  var dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: 'long', year: 'numeric' })
+              + ' à ' + date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+
+  var classesStatut = COULEURS_STATUT[cmd.statut] || 'bg-beige text-muted';
+
+  carte.innerHTML = `
+    <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <p class="text-xs text-muted uppercase tracking-widest">Commande #${cmd.id}</p>
+        <p class="font-display text-lg text-charcoal">${cmd.utilisateurNom || 'Client'}</p>
+        ${estAdmin ? `<p class="text-xs text-muted">${cmd.utilisateurEmail || ''}</p>` : ''}
+        <p class="text-xs text-muted">${dateStr}</p>
+      </div>
+      <div class="flex items-center gap-3 flex-wrap">
+        <span class="statut-badge text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-sm ${classesStatut}">${cmd.statut}</span>
+        <span class="font-display text-xl font-semibold text-terracotta">${(cmd.total || 0).toLocaleString('fr-FR')} Fcfa</span>
+        <button data-toggle="${cmd.id}" class="text-xs text-muted hover:text-charcoal flex items-center gap-1 border border-gray-200 rounded px-2 py-1">
+          Détails <i class="fa-solid fa-chevron-down text-[10px] icone-toggle"></i>
+        </button>
+      </div>
+    </div>
+
+    <div id="details-${cmd.id}" class="hidden px-5 py-4 bg-beige/30">
+      <div class="grid gap-2 mb-4">
+        ${(cmd.articles || []).map(function(a) {
+          return `
+            <div class="flex items-center gap-3 text-sm">
+              <div class="w-10 h-10 rounded bg-[#C4A882] overflow-hidden flex-shrink-0">
+                <img src="${a.image}" alt="${a.nom}" class="w-full h-full object-cover" onerror="this.style.opacity='0.3'" />
+              </div>
+              <span class="flex-1 text-charcoal">${a.nom}</span>
+              <span class="text-muted">× ${a.quantite}</span>
+              <span class="font-medium text-charcoal w-28 text-right">${((a.prix || 0) * a.quantite).toLocaleString('fr-FR')} Fcfa</span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+
+      ${cmd.livraison ? `
+        <div class="text-xs text-muted border-t border-gray-200 pt-3 mt-2">
+          <p><strong class="text-charcoal">Livraison :</strong>
+            ${cmd.livraison.adresse || ''}${cmd.livraison.ville ? ', ' + cmd.livraison.ville : ''}
+            ${cmd.livraison.telephone ? ' — ' + cmd.livraison.telephone : ''}
+            ${cmd.livraison.paiement ? ' — ' + cmd.livraison.paiement : ''}
+          </p>
+        </div>
+      ` : ''}
+
+      ${estAdmin ? `
+        <div class="mt-4 flex items-center gap-3 flex-wrap border-t border-gray-200 pt-3">
+          <label class="text-xs text-muted">Modifier le statut :</label>
+          <select data-statut-id="${cmd.id}" class="select-statut-commande border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-terracotta">
+            ${STATUTS_COMMANDE.map(function(s) {
+              return '<option value="' + s + '"' + (s === cmd.statut ? ' selected' : '') + '>' + s + '</option>';
+            }).join('')}
+          </select>
+          <button data-annuler-id="${cmd.id}" class="${cmd.statut === 'Annulé' ? 'hidden' : ''} text-xs text-red-400 hover:text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition">
+            <i class="fa-solid fa-ban"></i> Annuler
           </button>
         </div>
-      `;
+      ` : ''}
+    </div>
+  `;
 
-      corps.appendChild(ligne);
-    });
-  }
+  // Toggle détails
+  carte.querySelector('button[data-toggle]').addEventListener('click', function() {
+    var det    = carte.querySelector('#details-' + cmd.id);
+    var icone  = this.querySelector('.icone-toggle');
+    var ouvert = !det.classList.contains('hidden');
+    det.classList.toggle('hidden', ouvert);
+    if (icone) icone.className = ouvert
+      ? 'fa-solid fa-chevron-down text-[10px] icone-toggle'
+      : 'fa-solid fa-chevron-up text-[10px] icone-toggle';
+  });
 
-  // Compteur
-  if (compteur) {
-    compteur.textContent = total === 0
-      ? 'Aucun résultat'
-      : `Affichage de ${debut + 1}–${fin} sur ${total} commandes`;
-  }
-
-  // Pagination
-  if (pagination) {
-    pagination.innerHTML = '';
-
-    var boutonPrev = document.createElement('button');
-    boutonPrev.type = 'button';
-    boutonPrev.className = 'w-7 h-7 flex items-center justify-center rounded border border-gray-200 text-muted hover:text-charcoal hover:border-charcoal transition text-xs disabled:opacity-40';
-    boutonPrev.innerHTML = '<i class="fa-solid fa-chevron-left"></i>';
-    boutonPrev.disabled = pageActuelle <= 1;
-    boutonPrev.addEventListener('click', function() {
-      if (pageActuelle > 1) { pageActuelle--; rendreTableauCommandes(); }
-    });
-    pagination.appendChild(boutonPrev);
-
-    for (var p = 1; p <= totalPages; p++) {
-      var boutonPage = document.createElement('button');
-      boutonPage.type = 'button';
-      boutonPage.textContent = p;
-      boutonPage.className = p === pageActuelle
-        ? 'w-7 h-7 flex items-center justify-center rounded text-xs font-semibold bg-charcoal text-white'
-        : 'w-7 h-7 flex items-center justify-center rounded border border-gray-200 text-xs text-muted hover:text-charcoal hover:border-charcoal transition';
-
-      (function(numero) {
-        boutonPage.addEventListener('click', function() {
-          pageActuelle = numero;
-          rendreTableauCommandes();
-        });
-      })(p);
-
-      pagination.appendChild(boutonPage);
+  // Select statut (admin)
+  if (estAdmin) {
+    var selectStatut = carte.querySelector('select[data-statut-id]');
+    if (selectStatut) {
+      selectStatut.addEventListener('change', async function() {
+        var nouveauStatut = selectStatut.value;
+        try {
+          await modifierStatutCommande(cmd.id, nouveauStatut);
+          cmd.statut = nouveauStatut;
+          var badge = carte.querySelector('.statut-badge');
+          if (badge) {
+            badge.textContent = nouveauStatut;
+            badge.className = 'statut-badge text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-sm ' + (COULEURS_STATUT[nouveauStatut] || 'bg-beige text-muted');
+          }
+          afficherToast('Statut mis à jour : ' + nouveauStatut);
+        } catch (err) {
+          alert(err.message || 'Erreur lors de la mise à jour');
+          selectStatut.value = cmd.statut;
+        }
+      });
     }
 
-    var boutonSuiv = document.createElement('button');
-    boutonSuiv.type = 'button';
-    boutonSuiv.className = 'w-7 h-7 flex items-center justify-center rounded border border-gray-200 text-muted hover:text-charcoal hover:border-charcoal transition text-xs disabled:opacity-40';
-    boutonSuiv.innerHTML = '<i class="fa-solid fa-chevron-right"></i>';
-    boutonSuiv.disabled = pageActuelle >= totalPages;
-    boutonSuiv.addEventListener('click', function() {
-      if (pageActuelle < totalPages) { pageActuelle++; rendreTableauCommandes(); }
-    });
-    pagination.appendChild(boutonSuiv);
+    var boutonAnnuler = carte.querySelector('button[data-annuler-id]');
+    if (boutonAnnuler) {
+      boutonAnnuler.addEventListener('click', async function() {
+        if (!confirm('Annuler la commande #' + cmd.id + ' ?')) return;
+        try {
+          await modifierStatutCommande(cmd.id, 'Annulé');
+          cmd.statut = 'Annulé';
+          if (selectStatut) selectStatut.value = 'Annulé';
+          var badge = carte.querySelector('.statut-badge');
+          if (badge) {
+            badge.textContent = 'Annulé';
+            badge.className = 'statut-badge text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-sm ' + COULEURS_STATUT['Annulé'];
+          }
+          boutonAnnuler.classList.add('hidden');
+          afficherToast('Commande annulée');
+        } catch (err) {
+          alert(err.message || 'Erreur');
+        }
+      });
+    }
   }
+
+  return carte;
 }
 
 // ─── Écouteurs ────────────────────────────────────────────────────────────────
 
-function mettreAJourBoutonsStatut(statut) {
-  var boutons = document.querySelectorAll('#filtres-statut-commandes .btn-statut');
-  boutons.forEach(function(btn) {
-    if (btn.getAttribute('data-statut') === statut) {
-      btn.className = 'btn-statut px-3 py-1.5 text-xs rounded-md font-medium bg-charcoal text-white transition';
-    } else {
-      btn.className = 'btn-statut px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition';
-    }
-  });
-}
-
-function attacherEcouteursCommandes(prenom) {
-
-  // Filtres statut
-  var zoneFiltres = document.getElementById('filtres-statut-commandes');
-  if (zoneFiltres) {
-    zoneFiltres.addEventListener('click', function(evenement) {
-      var btn = evenement.target.closest('.btn-statut');
-      if (!btn) return;
-      filtreStatutActif = btn.getAttribute('data-statut');
-      pageActuelle = 1;
-      mettreAJourBoutonsStatut(filtreStatutActif);
-      rendreTableauCommandes();
+function attacherEcouteursCommandes(session, estAdmin) {
+  var btnRafraichir = document.getElementById('rafraichir-commandes');
+  if (btnRafraichir) {
+    btnRafraichir.addEventListener('click', function() {
+      chargerCommandes(session, estAdmin);
     });
   }
 
-  // Recherche
-  var champRecherche = document.getElementById('champ-recherche-commandes');
-  if (champRecherche) {
-    champRecherche.addEventListener('input', function() {
-      filtreRechercheCommandes = champRecherche.value;
-      pageActuelle = 1;
-      rendreTableauCommandes();
+  var selectFiltre = document.getElementById('filtre-statut-commandes');
+  if (selectFiltre) {
+    selectFiltre.addEventListener('change', function() {
+      chargerCommandes(session, estAdmin);
     });
   }
 }
 
-tailwind.config = {
-  theme: {
-    extend: {
-      colors: {
-        beige:         '#F5F0EA',
-        terracotta:    '#C97B5A',
-        'terra-light': '#E8A882',
-        'terra-pale':  '#F2DDD0',
-        charcoal:      '#2C2A27',
-        muted:         '#9B9589',
-      },
-      fontFamily: {
-        display: ['Cormorant Garamond', 'serif'],
-        body:    ['Inter', 'sans-serif'],
-      },
-    }
-  }
+// ─── Toast ────────────────────────────────────────────────────────────────────
+
+function afficherToast(message) {
+  var zone = document.getElementById('toast-zone');
+  if (!zone) return;
+  var toast = document.createElement('div');
+  toast.className = 'bg-charcoal text-white text-sm px-4 py-3 rounded-lg shadow-lg flex items-center gap-2';
+  toast.innerHTML = '<i class="fa-solid fa-check text-terra-light"></i> ' + message;
+  zone.appendChild(toast);
+  setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity .3s'; }, 1800);
+  setTimeout(function() { toast.remove(); }, 2200);
 }

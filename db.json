@@ -7,7 +7,18 @@
       "motDePasse": "client123",
       "entreprise": "Particulier",
       "role": "client",
-      "dateInscription": "2024-01-10T09:00:00.000Z"
+      "dateInscription": "2024-01-10T09:00:00.000Z",
+      "preferences": {
+        "langue": "en",
+        "densite": "normal",
+        "notifications": {
+          "commandes": true,
+          "devis": true,
+          "stock": false,
+          "users": false,
+          "hebdo": false
+        }
+      }
     },
     {
       "id": "2",
@@ -41,8 +52,292 @@
       }
     }
   ],
-  "produits": [],
-  "commandes": [],
+  "produits": [
+    {
+      "id": "p001",
+      "nom": "Canapé Velours Taupe",
+      "categorie": "mobilier",
+      "prix": 185000,
+      "image": "canape.jpeg",
+      "vedette": true,
+      "stock": 12,
+      "description": "Canapé 3 places en velours taupe, structure en bois massif."
+    },
+    {
+      "id": "p002",
+      "nom": "Lampe Torchère Dorée",
+      "categorie": "luminaire",
+      "prix": 62000,
+      "image": "bureau.png",
+      "vedette": false,
+      "stock": 25,
+      "description": "Lampe sur pied finition dorée brossée, abat-jour lin."
+    },
+    {
+      "id": "p003",
+      "nom": "Chaise Lounge Naturel",
+      "categorie": "mobilier",
+      "prix": 94000,
+      "image": "inscim.png",
+      "vedette": true,
+      "stock": 8,
+      "description": "Chaise lounge en chêne naturel et cuir pleine fleur."
+    },
+    {
+      "id": "p004",
+      "nom": "Suspension Rattan",
+      "categorie": "luminaire",
+      "prix": 47500,
+      "image": "CONIM.png",
+      "vedette": false,
+      "stock": 14,
+      "description": "Suspension tressée main en rattan naturel."
+    },
+    {
+      "id": "p005",
+      "nom": "Vase Céramique Trio",
+      "categorie": "decoration",
+      "prix": 28000,
+      "image": "bureau.png",
+      "vedette": false,
+      "stock": 30,
+      "description": "Trio de vases en céramique émaillée, tons terre cuite."
+    },
+    {
+      "id": "p006",
+      "nom": "Lit Plateforme Chêne",
+      "categorie": "mobilier",
+      "prix": 320000,
+      "image": "CONIM.png",
+      "vedette": true,
+      "stock": 4,
+      "description": "Lit plateforme 160x200 en chêne massif huilé."
+    },
+    {
+      "id": "p007",
+      "nom": "Table Basse Marbre",
+      "categorie": "mobilier",
+      "prix": 148000,
+      "image": "canape.jpeg",
+      "vedette": false,
+      "stock": 6,
+      "description": "Table basse plateau marbre, piétement laiton."
+    },
+    {
+      "id": "p008",
+      "nom": "Miroir Arche Laiton",
+      "categorie": "decoration",
+      "prix": 76000,
+      "image": "inscim.png",
+      "vedette": false,
+      "stock": 10,
+      "description": "Miroir arche grand format encadrement laiton."
+    },
+    {
+      "id": "p009",
+      "nom": "Coussin Lin Ivoire",
+      "categorie": "textile",
+      "prix": 14500,
+      "image": "bureau.png",
+      "vedette": false,
+      "stock": 50,
+      "description": "Coussin 45x45 en lin lavé ivoire."
+    },
+    {
+      "id": "p010",
+      "nom": "Bureau Exécutif Noyer",
+      "categorie": "bureau",
+      "prix": 265000,
+      "image": "CONIM.png",
+      "vedette": true,
+      "stock": 3,
+      "description": "Bureau exécutif placage noyer, tiroirs intégrés."
+    },
+    {
+      "id": "p011",
+      "nom": "Étagère Modulaire",
+      "categorie": "rangement",
+      "prix": 112000,
+      "image": "canape.jpeg",
+      "vedette": false,
+      "stock": 9,
+      "description": "Étagère modulaire 5 niveaux, métal et bois."
+    },
+    {
+      "id": "p012",
+      "nom": "Plaid Cachemire Sable",
+      "categorie": "textile",
+      "prix": 39000,
+      "image": "inscim.png",
+      "vedette": false,
+      "stock": 22,
+      "description": "Plaid 130x180 en cachemire teinte sable."
+    },
+    {
+      "id": "p013",
+      "nom": "Fauteuil Bouclette Crème",
+      "categorie": "mobilier",
+      "prix": 128000,
+      "image": "canape.jpeg",
+      "vedette": true,
+      "stock": 7,
+      "description": "Fauteuil tissu bouclette crème, piétement bois."
+    },
+    {
+      "id": "p014",
+      "nom": "Applique Murale Globe",
+      "categorie": "luminaire",
+      "prix": 35000,
+      "image": "bureau.png",
+      "vedette": false,
+      "stock": 18,
+      "description": "Applique murale globe verre opalin, bras laiton."
+    },
+    {
+      "id": "p015",
+      "nom": "Tapis Berbère Beige",
+      "categorie": "textile",
+      "prix": 89000,
+      "image": "inscim.png",
+      "vedette": true,
+      "stock": 5,
+      "description": "Tapis berbère noué main 200x300 cm."
+    },
+    {
+      "id": "p016",
+      "nom": "Console Travertin",
+      "categorie": "mobilier",
+      "prix": 178000,
+      "image": "CONIM.png",
+      "vedette": false,
+      "stock": 4,
+      "description": "Console entrée en travertin et piétement noir mat."
+    },
+    {
+      "id": "p017",
+      "nom": "Photophore Verre Fumé",
+      "categorie": "decoration",
+      "prix": 12500,
+      "image": "bureau.png",
+      "vedette": false,
+      "stock": 40,
+      "description": "Photophore verre fumé, set de 3."
+    },
+    {
+      "id": "p018",
+      "nom": "Chaise Bureau Cuir",
+      "categorie": "bureau",
+      "prix": 145000,
+      "image": "canape.jpeg",
+      "vedette": false,
+      "stock": 6,
+      "description": "Chaise de bureau cuir camel, structure aluminium."
+    },
+    {
+      "id": "p019",
+      "nom": "Bibliothèque Métal",
+      "categorie": "rangement",
+      "prix": 198000,
+      "image": "CONIM.png",
+      "vedette": true,
+      "stock": 3,
+      "description": "Bibliothèque industrielle métal noir 6 niveaux."
+    },
+    {
+      "id": "p020",
+      "nom": "Rideaux Lin Naturel",
+      "categorie": "textile",
+      "prix": 56000,
+      "image": "inscim.png",
+      "vedette": false,
+      "stock": 15,
+      "description": "Paire de rideaux lin naturel 140x270 cm."
+    },
+    {
+      "id": "p021",
+      "nom": "Suspension Laiton 3 Bras",
+      "categorie": "luminaire",
+      "prix": 92000,
+      "image": "bureau.png",
+      "vedette": false,
+      "stock": 8,
+      "description": "Suspension laiton brossé 3 bras articulés."
+    },
+    {
+      "id": "p022",
+      "nom": "Pouf Cuir Cognac",
+      "categorie": "mobilier",
+      "prix": 67000,
+      "image": "canape.jpeg",
+      "vedette": false,
+      "stock": 11,
+      "description": "Pouf rond cuir cognac, garnissage ferme."
+    },
+    {
+      "id": "p023",
+      "nom": "Sculpture Bois Brut",
+      "categorie": "decoration",
+      "prix": 42000,
+      "image": "inscim.png",
+      "vedette": false,
+      "stock": 12,
+      "description": "Sculpture totem bois brut, pièce signée."
+    },
+    {
+      "id": "p024",
+      "nom": "Caisson Bureau Chêne",
+      "categorie": "rangement",
+      "prix": 134000,
+      "image": "CONIM.png",
+      "vedette": false,
+      "stock": 5,
+      "description": "Caisson 3 tiroirs sur roulettes, placage chêne."
+    }
+  ],
+  "commandes": [
+    {
+      "utilisateurId": "1",
+      "utilisateurNom": "Aminata Diallo",
+      "utilisateurEmail": "client@decoflow.com",
+      "articles": [
+        {
+          "produitId": "p007",
+          "nom": "Table Basse Marbre",
+          "prix": 148000,
+          "image": "canape.jpeg",
+          "categorie": "mobilier",
+          "quantite": 1
+        },
+        {
+          "produitId": "p015",
+          "nom": "Tapis Berbère Beige",
+          "prix": 89000,
+          "image": "inscim.png",
+          "categorie": "textile",
+          "quantite": 1
+        },
+        {
+          "produitId": "p005",
+          "nom": "Vase Céramique Trio",
+          "prix": 28000,
+          "image": "bureau.png",
+          "categorie": "decoration",
+          "quantite": 1
+        }
+      ],
+      "total": 265000,
+      "statut": "En préparation",
+      "dateCommande": "2026-06-15T12:30:26.600Z",
+      "livraison": {
+        "adresse": "hann mariste",
+        "ville": "dakar",
+        "telephone": "774062100",
+        "paiement": "orange-money"
+      },
+      "id": 1
+    }
+  ],
   "devis": [],
+  "notifications": [],
   "$schema": "./node_modules/json-server/schema.json"
 }

@@ -11,11 +11,45 @@ var donneesGraphique = {
   mensuel:      { lun: 30, mar: 80, mer: 50, jeu: 90,  ven: 60, sam: 75, dim: 55 }
 };
 
+// Données mock des commandes et clients pour les statistiques
+var donneesStats = {
+  commandes: {
+    total: 48,
+    evolution: "+5%",
+    details: [
+      { id: "#DF-8902", client: "Atelier Bourgeois", montant: "420,00 €", date: "Il y a 12 minutes" },
+      { id: "#DF-8901", client: "Mme. Laurent", montant: "1 200,00 €", date: "Il y a 2 heures" },
+      { id: "#DF-8900", client: "Résidence Haussmann", montant: "750,00 €", date: "Il y a 5 heures" }
+    ]
+  },
+  clients: {
+    total: 842,
+    evolution: "+12%",
+    recents: [
+      { nom: "Atelier Pierre", ville: "Lyon, FR", date: "Il y a 1 heure" },
+      { nom: "Studio Lumière", ville: "Paris, FR", date: "Il y a 3 heures" },
+      { nom: "Espace Vert", ville: "Bordeaux, FR", date: "Il y a 6 heures" }
+    ]
+  },
+  stock: {
+    total: 842,
+    alertes: 3
+  }
+};
 
-export function afficherPageDashboard(prenomUtilisateur) {
+export function afficherPageDashboard(prenomUtilisateur, role = "admin", userId = null) {
+  
+  // Vérifier si l'utilisateur a accès au dashboard
+  if (role === 'client') {
+    // Rediriger le client vers la page des devis
+    afficherPageDevis(prenomUtilisateur, role, userId);
+    return;
+  }
 
   var conteneurApp = document.getElementById('app');
   var prenom = prenomUtilisateur || 'Utilisateur';
+  var roleUtilisateur = role || 'admin';
+  
   history.pushState({ page: 'dashboard', nom: prenomUtilisateur }, '', '#dashboard');
 
   conteneurApp.className = 'w-full';
@@ -47,7 +81,7 @@ export function afficherPageDashboard(prenomUtilisateur) {
             <i class="fa-solid fa-magnifying-glass text-sm"></i>
           </button>
           <div id="profil-utilisateur" class="flex items-center gap-2 cursor-pointer">
-            <span id="nom-utilisateur" class="text-sm font-medium text-charcoal hidden sm:block">${prenom}</span>
+            <span id="nom-utilisateur" class="text-sm font-medium text-charcoal hidden sm:block">${prenom} (${roleUtilisateur === 'superadmin' ? 'Super Admin' : 'Admin'})</span>
             <div id="avatar-utilisateur" class="w-8 h-8 rounded-full bg-terra-pale flex items-center justify-center overflow-hidden">
               <i class="fa-solid fa-user text-terracotta text-sm"></i>
             </div>
@@ -62,7 +96,9 @@ export function afficherPageDashboard(prenomUtilisateur) {
           <h1 id="titre-bienvenue" class="font-display text-4xl font-semibold text-charcoal mb-1">
             Bienvenue, <span id="prenom-utilisateur">${prenom}</span>
           </h1>
-          <p id="sous-titre-bienvenue" class="text-sm text-muted">Voici un aperçu de l'activité de DecoFlow aujourd'hui.</p>
+          <p id="sous-titre-bienvenue" class="text-sm text-muted">
+            ${roleUtilisateur === 'superadmin' ? 'Supervision complète de l\'activité DecoFlow.' : 'Voici un aperçu de l\'activité de DecoFlow aujourd\'hui.'}
+          </p>
         </div>
 
         <div id="grille-principale" class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -87,9 +123,9 @@ export function afficherPageDashboard(prenomUtilisateur) {
                   <i class="fa-regular fa-square text-muted text-sm"></i>
                   <span class="text-xs text-muted uppercase tracking-wider">Commandes</span>
                 </div>
-                <p class="text-2xl font-semibold text-charcoal font-display mb-1">48</p>
+                <p class="text-2xl font-semibold text-charcoal font-display mb-1">${donneesStats.commandes.total}</p>
                 <p class="text-xs text-green-500 flex items-center gap-1">
-                  <i class="fa-solid fa-arrow-trend-up"></i> +5% vs hier
+                  <i class="fa-solid fa-arrow-trend-up"></i> ${donneesStats.commandes.evolution} vs hier
                 </p>
               </div>
 
@@ -98,7 +134,7 @@ export function afficherPageDashboard(prenomUtilisateur) {
                   <i class="fa-regular fa-rectangle-list text-muted text-sm"></i>
                   <span class="text-xs text-muted uppercase tracking-wider">Stock</span>
                 </div>
-                <p class="text-2xl font-semibold text-charcoal font-display mb-1">842</p>
+                <p class="text-2xl font-semibold text-charcoal font-display mb-1">${donneesStats.stock.total}</p>
                 <p class="text-xs text-muted">Total articles actifs</p>
               </div>
 
@@ -130,35 +166,21 @@ export function afficherPageDashboard(prenomUtilisateur) {
             <div id="carte-activite" class="bg-white rounded-xl p-5 border border-gray-100 flex-1">
               <h2 class="text-xs font-semibold text-charcoal uppercase tracking-wider mb-4">Activité récente</h2>
               <ul class="flex flex-col gap-4">
-
-                <li class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-full bg-terra-pale flex items-center justify-center flex-shrink-0 text-xs font-semibold text-terracotta">N</div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-charcoal leading-snug">Nouvelle commande #DF-8902</p>
-                    <p class="text-xs text-muted mt-0.5">Il y a 12 minutes · 420,00 €</p>
-                  </div>
-                </li>
-
-                <li class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-full bg-beige flex items-center justify-center flex-shrink-0 text-xs font-semibold text-charcoal">A</div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-charcoal leading-snug">Nouveau client · Atelier Pierre</p>
-                    <p class="text-xs text-muted mt-0.5">Il y a 1 heure · Lyon, FR</p>
-                  </div>
-                </li>
-
-                <li class="flex items-start gap-3">
-                  <div class="w-8 h-8 rounded-full bg-green-50 flex items-center justify-center flex-shrink-0 text-xs font-semibold text-green-600">D</div>
-                  <div class="flex-1 min-w-0">
-                    <p class="text-sm font-medium text-charcoal leading-snug">Devis #Q-452 validé</p>
-                    <p class="text-xs text-muted mt-0.5">Il y a 3 heures · Bureau 'Bori'</p>
-                  </div>
-                </li>
-
+                ${donneesStats.commandes.details.map(function(cmd) {
+                  return `
+                    <li class="flex items-start gap-3">
+                      <div class="w-8 h-8 rounded-full bg-terra-pale flex items-center justify-center flex-shrink-0 text-xs font-semibold text-terracotta">${cmd.client.charAt(0)}</div>
+                      <div class="flex-1 min-w-0">
+                        <p class="text-sm font-medium text-charcoal leading-snug">Commande ${cmd.id}</p>
+                        <p class="text-xs text-muted mt-0.5">${cmd.date} · ${cmd.montant}</p>
+                      </div>
+                    </li>
+                  `;
+                }).join('')}
               </ul>
               <div class="mt-5 pt-4 border-t border-gray-100">
                 <a id="lien-historique" href="#" class="flex items-center justify-between text-sm text-charcoal hover:text-terracotta transition font-medium group">
-                  <span>Voir tout l'historique</span>
+                  <span>Voir toutes les commandes</span>
                   <i class="fa-solid fa-arrow-right text-xs group-hover:translate-x-1 transition-transform"></i>
                 </a>
               </div>
@@ -201,9 +223,8 @@ export function afficherPageDashboard(prenomUtilisateur) {
     </div>
   `;
 
-  attacherEcouteursDashboard(prenom);
+  attacherEcouteursDashboard(prenom, roleUtilisateur);
 }
-
 
 function mettreAJourGraphique(periode) {
   var jours     = ['lun', 'mar', 'mer', 'jeu', 'ven', 'sam', 'dim'];
@@ -225,33 +246,31 @@ function mettreAJourGraphique(periode) {
   });
 }
 
-
-function attacherEcouteursDashboard(prenom) {
+function attacherEcouteursDashboard(prenom, role) {
 
   var boutonHebdo   = document.getElementById('bouton-hebdomadaire');
   var boutonMensuel = document.getElementById('bouton-mensuel');
 
+  if (boutonHebdo && boutonMensuel) {
+    boutonHebdo.addEventListener('click', function() {
+      boutonHebdo.classList.add('bg-charcoal', 'text-white');
+      boutonHebdo.classList.remove('bg-white', 'text-muted');
+      boutonMensuel.classList.add('bg-white', 'text-muted');
+      boutonMensuel.classList.remove('bg-charcoal', 'text-white');
+      mettreAJourGraphique('hebdomadaire');
+    });
 
-  boutonHebdo.addEventListener('click', function() {
-    boutonHebdo.classList.add('bg-charcoal', 'text-white');
-    boutonHebdo.classList.remove('bg-white', 'text-muted');
-    boutonMensuel.classList.add('bg-white', 'text-muted');
-    boutonMensuel.classList.remove('bg-charcoal', 'text-white');
-    mettreAJourGraphique('hebdomadaire');
-  });
+    boutonMensuel.addEventListener('click', function() {
+      boutonMensuel.classList.add('bg-charcoal', 'text-white');
+      boutonMensuel.classList.remove('bg-white', 'text-muted');
+      boutonHebdo.classList.add('bg-white', 'text-muted');
+      boutonHebdo.classList.remove('bg-charcoal', 'text-white');
+      mettreAJourGraphique('mensuel');
+    });
+  }
 
-  boutonMensuel.addEventListener('click', function() {
-    boutonMensuel.classList.add('bg-charcoal', 'text-white');
-    boutonMensuel.classList.remove('bg-white', 'text-muted');
-    boutonHebdo.classList.add('bg-white', 'text-muted');
-    boutonHebdo.classList.remove('bg-charcoal', 'text-white');
-    mettreAJourGraphique('mensuel');
-  });
-
-  // Navbar centralisée (voir navigation.js)
+  // Navbar centralisée
   attacherNavigationNavbar(prenom);
-
-  // Actions spécifiques non liées au navbar
 
   // ── Carte Commandes (KPI) → Commandes ──
   var carteCommandes = document.getElementById('carte-commandes');
@@ -278,8 +297,15 @@ function attacherEcouteursDashboard(prenom) {
       afficherPageCommandes(prenom);
     });
   }
-}
 
+  // ── Profil utilisateur → Page Profil ──
+  var profilUtilisateur = document.getElementById('profil-utilisateur');
+  if (profilUtilisateur) {
+    profilUtilisateur.addEventListener('click', function() {
+      afficherPageProfil(prenom);
+    });
+  }
+}
 
 tailwind.config = {
   theme: {
@@ -298,4 +324,4 @@ tailwind.config = {
       },
     }
   }
-}
+};

@@ -5,7 +5,15 @@ import { afficherPageProduits }   from './produits.js';
 import { afficherPageCommandes }  from './commandes.js';
 import { attacherNavigationNavbar } from './navigation.js';
 
+// Importations issues de la logique de db.js et produits.js
+import {
+  lireSession,
+  recupererTousLesProduits,
+  ajouterAuPanier,
+  compterArticlesPanier
+} from './db.js';
 
+// Données des catégories DecoFlow
 var donneesCategories = [
   { id: 'mobilier',    icone: 'fa-couch',         nom: 'Mobilier',      articles: 42, statut: 'active'  },
   { id: 'luminaire',   icone: 'fa-lightbulb',      nom: 'Luminaire',     articles: 28, statut: 'active'  },
@@ -25,15 +33,25 @@ var donneesCategories = [
 var filtreActif      = 'toutes';
 var recherche        = '';
 var categorieActive  = null; 
-export function afficherPageCategories(prenomUtilisateur) {
+var listeProduitsGlobal = []; // Contiendra les vrais produits de la BDD
+
+export async function afficherPageCategories(prenomUtilisateur) {
   history.pushState({ page: 'categories', nom: prenomUtilisateur }, '', '#categories');
 
+  // Récupération de la session et des rôles à la manière de produits.js
+  var session = lireSession();
+  var role    = session ? session.role : 'client';
+  var estAdmin = (role === 'admin' || role === 'superadmin');
+
   var conteneurApp = document.getElementById('app');
-  var prenom = prenomUtilisateur || 'Utilisateur';
+  var prenom = prenomUtilisateur || (session && session.nom) || 'Utilisateur';
 
   filtreActif     = 'toutes';
   recherche       = '';
   categorieActive = null;
+
+  // Charger les vrais produits depuis db.js
+  listeProduitsGlobal = await recupererTousLesProduits();
 
   conteneurApp.className = 'w-full';
 
@@ -44,7 +62,6 @@ export function afficherPageCategories(prenomUtilisateur) {
     <div id="page-categories" class="animer-fond w-full min-h-screen bg-beige flex flex-col">
 
       <header id="navbar" class="bg-white border-b border-gray-100 px-6 py-3 flex items-center justify-between sticky top-0 z-50">
-
         <div id="navbar-logo" class="flex items-center gap-2 mr-10">
           <img src="LOGOD.png" alt="DecoFlow" class="h-8" />
           <span class="font-display text-2xl font-semibold text-charcoal tracking-wide">DecoFlow</span>
@@ -70,27 +87,26 @@ export function afficherPageCategories(prenomUtilisateur) {
             </div>
           </div>
         </div>
-
       </header>
 
       <main id="contenu-categories" class="flex-1 px-6 py-8 max-w-6xl mx-auto w-full">
 
-        <!-- En-tête section -->
         <div class="mb-6 border border-dashed border-gray-200 rounded-xl p-6 bg-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <h1 class="font-display text-4xl font-semibold text-charcoal mb-1">Gestion des Catégories</h1>
             <p class="text-sm text-muted max-w-md">Organisez votre catalogue avec une structure raffinée. Créez des collections qui inspirent l'élégance et la curation artisanale.</p>
           </div>
           <button id="bouton-ajouter-categorie" type="button"
-            class="flex items-center gap-2 bg-charcoal text-white text-xs uppercase tracking-widest px-5 py-3 hover:bg-terracotta transition-colors duration-200 whitespace-nowrap self-start">
+            class="${estAdmin ? '' : 'hidden'} flex items-center gap-2 bg-charcoal text-white text-xs uppercase tracking-widest px-5 py-3 hover:bg-terracotta transition-colors duration-200 whitespace-nowrap self-start">
             <i class="fa-solid fa-plus text-xs"></i> Ajouter une catégorie
           </button>
         </div>
 
-        <!-- Vue liste ou vue détail — injectée dynamiquement -->
         <div id="zone-contenu-categories"></div>
 
       </main>
+
+      <div id="toast-zone" class="fixed bottom-6 right-6 z-[200] flex flex-col gap-2"></div>
 
       <footer id="footer" class="bg-white border-t border-gray-100 mt-auto">
         <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -98,36 +114,27 @@ export function afficherPageCategories(prenomUtilisateur) {
             <span class="font-display text-lg font-semibold text-charcoal">DecoFlow</span>
             <span class="text-xs text-muted">© 2024 DecoFlow Interior Management. All rights reserved.</span>
           </div>
-          <nav class="flex items-center gap-5">
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Legal Notice</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Privacy Policy</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Contact Us</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Terms of Service</a>
-          </nav>
         </div>
       </footer>
 
     </div>
   `;
 
-  rendreVueListe();
-  attacherEcouteursCategories(prenom);
+  rendreVueListe(estAdmin);
+  attacherEcouteursCategories(prenom, estAdmin);
   attacherNavigationNavbar(prenom);
 }
 
-
-
-function rendreVueListe() {
+function rendreVueListe(estAdmin) {
   var zone = document.getElementById('zone-contenu-categories');
   if (!zone) return;
 
   zone.innerHTML = `
-    <!-- Filtres + recherche -->
     <div class="bg-white border border-gray-100 rounded-xl px-5 py-3 mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div id="filtres-categories" class="flex items-center gap-1">
-        <button id="filtre-toutes"   type="button" class="btn-filtre px-3 py-1.5 text-xs rounded-md font-medium bg-charcoal text-white transition">Toutes (13)</button>
-        <button id="filtre-actives"  type="button" class="btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition">Actives (9)</button>
-        <button id="filtre-archives" type="button" class="btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition">Archives (4)</button>
+        <button id="filtre-toutes"   type="button" class="btn-filtre px-3 py-1.5 text-xs rounded-md font-medium bg-charcoal text-white transition">Toutes</button>
+        <button id="filtre-actives"  type="button" class="btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition">Actives</button>
+        <button id="filtre-archives" type="button" class="btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition">Archives</button>
       </div>
       <div class="relative">
         <span class="absolute inset-y-0 left-3 flex items-center text-muted pointer-events-none">
@@ -138,57 +145,16 @@ function rendreVueListe() {
       </div>
     </div>
 
-    <!-- Grille des catégories -->
     <div id="grille-categories" class="bg-white border border-dashed border-gray-200 rounded-xl p-6 mb-8">
-      <div id="liste-categories" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-      </div>
-    </div>
-
-    <!-- Aperçu visuel -->
-    <div class="bg-white border border-gray-100 rounded-xl p-6">
-      <h2 class="font-display text-2xl font-semibold text-charcoal mb-5">Aperçu Visuel des Catégories</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="md:col-span-2 relative rounded-lg overflow-hidden min-h-[260px] bg-charcoal">
-          <img src="canape.jpeg" alt="Collection Mobilier" class="absolute inset-0 w-full h-full object-cover opacity-80" />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-          <div class="absolute bottom-5 left-5">
-            <p class="text-terra-light text-xs font-semibold uppercase tracking-widest mb-1">Collection Printemps</p>
-            <h3 class="font-display text-white text-2xl font-semibold leading-tight mb-3">Curation Mobilier d'Art</h3>
-            <button type="button"
-              class="border border-white/60 text-white text-xs uppercase tracking-widest px-4 py-2 hover:bg-white hover:text-charcoal transition-colors duration-200">
-              Voir plus
-            </button>
-          </div>
-        </div>
-        <div class="flex flex-col gap-4">
-          <div class="bg-terra-pale rounded-lg p-5 flex-1 flex flex-col justify-between">
-            <div class="flex items-start justify-between">
-              <div>
-                <p class="text-xs text-terracotta font-semibold uppercase tracking-widest mb-1">Mises à jour</p>
-                <p class="text-sm text-charcoal leading-snug">3 nouvelles catégories créées cette semaine</p>
-              </div>
-              <i class="fa-regular fa-clock text-terracotta text-sm mt-0.5"></i>
-            </div>
-          </div>
-          <div class="bg-charcoal rounded-lg p-5 flex-1 flex flex-col justify-end relative overflow-hidden">
-            <div class="absolute inset-0 opacity-10">
-              <div class="absolute top-2 right-2 w-20 h-20 rounded-full border border-white/20"></div>
-              <div class="absolute bottom-2 left-2 w-12 h-12 rounded-full border border-white/20"></div>
-            </div>
-            <p class="text-terra-light text-xs font-semibold uppercase tracking-widest mb-1 relative z-10">Analytics</p>
-            <p class="font-display text-white text-xl font-semibold relative z-10">Performance</p>
-          </div>
-        </div>
-      </div>
+      <div id="liste-categories" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4"></div>
     </div>
   `;
 
-  rendreGrilleCategories();
-  attacherEcouteursFiltres();
+  rendreGrilleCategories(estAdmin);
+  attacherEcouteursFiltres(estAdmin);
 }
 
-
-function rendreVueDetailCategorie(cat) {
+function rendreVueDetailCategorie(cat, estAdmin) {
   categorieActive = cat.id;
   var zone = document.getElementById('zone-contenu-categories');
   if (!zone) return;
@@ -197,10 +163,11 @@ function rendreVueDetailCategorie(cat) {
     ? '<span class="bg-green-100 text-green-600 text-xs font-medium px-2.5 py-1 rounded-full">Active</span>'
     : '<span class="bg-gray-100 text-muted text-xs font-medium px-2.5 py-1 rounded-full">Archivée</span>';
 
+  // Filtrer les vrais produits liés à cette catégorie
+  var produitsDeLaCategorie = listeProduitsGlobal.filter(p => p.categorie.toLowerCase() === cat.id.toLowerCase());
+
   zone.innerHTML = `
     <div class="animer-fond">
-
-      <!-- Fil d'Ariane + retour -->
       <div class="flex items-center gap-2 mb-6 text-xs text-muted">
         <button id="bouton-retour-liste" type="button" class="flex items-center gap-1.5 hover:text-terracotta transition">
           <i class="fa-solid fa-arrow-left text-xs"></i> Catégories
@@ -209,7 +176,6 @@ function rendreVueDetailCategorie(cat) {
         <span class="text-charcoal font-medium">${cat.nom}</span>
       </div>
 
-      <!-- En-tête catégorie -->
       <div class="bg-white border border-gray-100 rounded-xl p-6 mb-6 flex flex-col sm:flex-row sm:items-center gap-4">
         <div class="w-14 h-14 rounded-xl bg-terra-pale flex items-center justify-center flex-shrink-0">
           <i class="fa-solid ${cat.icone} text-2xl text-terracotta"></i>
@@ -219,100 +185,100 @@ function rendreVueDetailCategorie(cat) {
             <h2 class="font-display text-3xl font-semibold text-charcoal">${cat.nom}</h2>
             ${badgeStatut}
           </div>
-          <p class="text-sm text-muted">${cat.articles} articles répertoriés dans cette catégorie</p>
+          <p class="text-sm text-muted">${produitsDeLaCategorie.length} articles répertoriés dans cette catégorie</p>
         </div>
-        <div class="flex items-center gap-2 self-start sm:self-center">
+        
+        <div class="flex items-center gap-2 self-start sm:self-center ${estAdmin ? '' : 'hidden'}">
           <button type="button" class="border border-gray-200 text-charcoal text-xs uppercase tracking-widest px-4 py-2 hover:bg-beige transition-colors duration-200">
             <i class="fa-regular fa-pen-to-square mr-1.5"></i> Modifier
           </button>
-          <button type="button" class="border border-red-200 text-red-400 text-xs uppercase tracking-widest px-4 py-2 hover:bg-red-50 transition-colors duration-200">
-            <i class="fa-regular fa-trash-can mr-1.5"></i> Supprimer
-          </button>
         </div>
       </div>
 
-      <!-- Statistiques -->
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 ${estAdmin ? '' : 'hidden'}">
         <div class="bg-white rounded-xl p-5 border border-gray-100">
           <p class="text-xs text-muted uppercase tracking-wider mb-2">Total articles</p>
-          <p class="text-3xl font-semibold text-charcoal font-display">${cat.articles}</p>
-        </div>
-        <div class="bg-white rounded-xl p-5 border border-gray-100">
-          <p class="text-xs text-muted uppercase tracking-wider mb-2">Ventes ce mois</p>
-          <p class="text-3xl font-semibold text-charcoal font-display">${Math.floor(cat.articles * 1.8)}</p>
+          <p class="text-3xl font-semibold text-charcoal font-display">${produitsDeLaCategorie.length}</p>
         </div>
         <div class="bg-white rounded-xl p-5 border border-gray-100">
           <p class="text-xs text-muted uppercase tracking-wider mb-2">Chiffre d'affaires</p>
-          <p class="text-3xl font-semibold text-charcoal font-display">${(cat.articles * 42500).toLocaleString('fr-FR')} Fcfa</p>
+          <p class="text-3xl font-semibold text-charcoal font-display">${(produitsDeLaCategorie.reduce((acc, p) => acc + p.prix, 0)).toLocaleString('fr-FR')} Fcfa</p>
         </div>
       </div>
 
-      <!-- Liste articles placeholder -->
       <div class="bg-white border border-dashed border-gray-200 rounded-xl p-6">
         <div class="flex items-center justify-between mb-4">
-          <h3 class="text-sm font-semibold text-charcoal uppercase tracking-wider">Articles de la catégorie</h3>
-          <button type="button" class="flex items-center gap-1.5 bg-charcoal text-white text-xs uppercase tracking-widest px-4 py-2 hover:bg-terracotta transition-colors duration-200">
-            <i class="fa-solid fa-plus text-xs"></i> Ajouter
-          </button>
+          <h3 class="text-sm font-semibold text-charcoal uppercase tracking-wider">Articles disponibles</h3>
         </div>
-        <div class="flex flex-col gap-3">
-          ${genererArticlesPlaceholder(cat)}
-        </div>
+        <div id="liste-produits-categorie-zone" class="flex flex-col gap-3">
+          </div>
       </div>
-
     </div>
   `;
 
-  var boutonRetour = document.getElementById('bouton-retour-liste');
-  boutonRetour.addEventListener('click', function() {
+  // Rendre et attacher les écouteurs d'achat sur les produits réels
+  injecterArticlesEtEcouteurs(produitsDeLaCategorie, estAdmin);
+
+  document.getElementById('bouton-retour-liste').addEventListener('click', function() {
     categorieActive = null;
-    rendreVueListe();
-    attacherEcouteursFiltres();
+    rendreVueListe(estAdmin);
   });
-  var lienProduits = document.getElementById('nav-produits');
-lienProduits.addEventListener('click', function(evenement) {
-  evenement.preventDefault();
-  afficherPageProduits(prenom);
-});
 }
 
+function injecterArticlesEtEcouteurs(produits, estAdmin) {
+  var zoneEncart = document.getElementById('liste-produits-categorie-zone');
+  if (!zoneEncart) return;
 
-function genererArticlesPlaceholder(cat) {
-  var nomsExemples = [
-    'Canapé Élite', 'Chaise Lounge', 'Table Basse', 'Armoire Classique',
-    'Étagère Moderne', 'Bureau Exécutif', 'Lampe Torchère', 'Miroir Doré'
-  ];
-  var html = '';
-  var nombre = Math.min(cat.articles, 5);
-  for (var i = 0; i < nombre; i++) {
-    var nom = nomsExemples[i % nomsExemples.length] + ' ' + cat.nom;
-    var prix = ((i + 1) * 35000 + Math.floor(Math.random() * 10000)).toLocaleString('fr-FR');
-    html += `
-      <div class="flex items-center justify-between px-4 py-3 border border-gray-100 rounded-lg hover:border-terracotta transition cursor-pointer">
-        <div class="flex items-center gap-3">
-          <div class="w-8 h-8 rounded-md bg-terra-pale flex items-center justify-center flex-shrink-0">
-            <i class="fa-solid ${cat.icone} text-sm text-terracotta"></i>
-          </div>
-          <div>
-            <p class="text-sm font-medium text-charcoal">${nom}</p>
-            <p class="text-xs text-muted">Réf. DF-${cat.id.substring(0,3).toUpperCase()}-00${i + 1}</p>
-          </div>
+  if (produits.length === 0) {
+    zoneEncart.innerHTML = '<p class="text-xs text-muted text-center py-4">Aucun article disponible dans cette catégorie.</p>';
+    return;
+  }
+
+  zoneEncart.innerHTML = '';
+
+  produits.forEach(function(produit) {
+    var itemRow = document.createElement('div');
+    itemRow.className = 'flex items-center justify-between px-4 py-3 border border-gray-100 rounded-lg hover:border-terracotta transition bg-white';
+    
+    itemRow.innerHTML = `
+      <div class="flex items-center gap-3">
+        <div class="w-12 h-12 rounded-md bg-[#C4A882] overflow-hidden flex-shrink-0">
+          <img src="${produit.image}" alt="${produit.nom}" class="w-full h-full object-cover" onerror="this.style.opacity='0.3'"/>
         </div>
-        <p class="text-sm font-semibold text-charcoal">${prix} Fcfa</p>
+        <div>
+          <p class="text-sm font-medium text-charcoal">${produit.nom}</p>
+          <p class="text-xs text-muted">Stock : ${produit.stock != null ? produit.stock : 0}</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <p class="text-sm font-semibold text-charcoal">${produit.prix.toLocaleString('fr-FR')} Fcfa</p>
+        ${estAdmin ? '' : `
+          <button type="button" data-id="${produit.id}" class="bouton-acheter-cat bg-charcoal text-white text-[11px] uppercase tracking-widest px-3 py-2 hover:bg-terracotta transition flex items-center gap-1.5">
+            <i class="fa-solid fa-cart-plus"></i> Commander
+          </button>
+        `}
       </div>
     `;
-  }
-  if (cat.articles > 5) {
-    html += `<p class="text-xs text-muted text-center pt-2">+ ${cat.articles - 5} autres articles…</p>`;
-  }
-  return html;
+
+    // Attacher l'événement d'ajout direct au panier sur le bouton
+    if (!estAdmin) {
+      var btnAchat = itemRow.querySelector('.bouton-acheter-cat');
+      btnAchat.addEventListener('click', function(e) {
+        e.stopPropagation();
+        ajouterAuPanier(produit, 1);
+        mettreAJourCompteurPanier();
+        afficherToast(produit.nom + ' ajouté au panier');
+      });
+    }
+
+    zoneEncart.appendChild(itemRow);
+  });
 }
 
-
-function rendreGrilleCategories() {
-  var liste = document.getElementById('liste-categories');
-  if (!liste) return;
-  liste.innerHTML = '';
+function rendreGrilleCategories(estAdmin) {
+  var listElement = document.getElementById('liste-categories');
+  if (!listElement) return;
+  listElement.innerHTML = '';
 
   var categoriesFiltrees = donneesCategories.filter(function(cat) {
     var correspondFiltre =
@@ -328,44 +294,32 @@ function rendreGrilleCategories() {
   });
 
   if (categoriesFiltrees.length === 0) {
-    var messageVide = document.createElement('p');
-    messageVide.className = 'col-span-4 text-center text-sm text-muted py-8';
-    messageVide.textContent = 'Aucune catégorie trouvée.';
-    liste.appendChild(messageVide);
+    listElement.innerHTML = '<p class="col-span-4 text-center text-sm text-muted py-8">Aucune catégorie trouvée.</p>';
     return;
   }
 
   categoriesFiltrees.forEach(function(cat) {
     var carte = document.createElement('div');
-    carte.className = 'flex flex-col items-center justify-center gap-3 p-6 border border-gray-100 rounded-xl hover:border-terracotta hover:shadow-sm transition cursor-pointer group';
-    carte.setAttribute('data-id', cat.id);
+    carte.className = 'flex flex-col items-center justify-center gap-3 p-6 border border-gray-100 rounded-xl hover:border-terracotta hover:shadow-sm transition cursor-pointer group bg-white';
+    
+    // Compter le nombre réel de produits pour l'affichage dynamique de la carte
+    var nbProduitsReels = listeProduitsGlobal.filter(p => p.categorie.toLowerCase() === cat.id.toLowerCase()).length;
 
-    var icone = document.createElement('i');
-    icone.className = 'fa-solid ' + cat.icone + ' text-2xl text-muted group-hover:text-terracotta transition';
-
-    var nom = document.createElement('p');
-    nom.className = 'text-sm font-medium text-charcoal';
-    nom.textContent = cat.nom;
-
-    var articles = document.createElement('p');
-    articles.className = 'text-xs text-muted';
-    articles.textContent = cat.articles + ' Articles répertoriés';
-
-    carte.appendChild(icone);
-    carte.appendChild(nom);
-    carte.appendChild(articles);
+    carte.innerHTML = `
+      <i class="fa-solid ${cat.icone} text-2xl text-muted group-hover:text-terracotta transition"></i>
+      <p class="text-sm font-medium text-charcoal">${cat.nom}</p>
+      <p class="text-xs text-muted">${nbProduitsReels} Article${nbProduitsReels > 1 ? 's' : ''}</p>
+    `;
 
     carte.addEventListener('click', function() {
-      rendreVueDetailCategorie(cat);
+      rendreVueDetailCategorie(cat, estAdmin);
     });
 
-    liste.appendChild(carte);
+    listElement.appendChild(carte);
   });
-
 }
 
-
-function attacherEcouteursFiltres() {
+function attacherEcouteursFiltres(estAdmin) {
   var boutonToutes   = document.getElementById('filtre-toutes');
   var boutonActives  = document.getElementById('filtre-actives');
   var boutonArchives = document.getElementById('filtre-archives');
@@ -375,13 +329,13 @@ function attacherEcouteursFiltres() {
 
   function activerFiltre(filtre) {
     filtreActif = filtre;
-    boutonToutes.className   = 'btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition';
-    boutonActives.className  = 'btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition';
-    boutonArchives.className = 'btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition';
+    [boutonToutes, boutonActives, boutonArchives].forEach(btn => {
+      btn.className = 'btn-filtre px-3 py-1.5 text-xs rounded-md font-medium text-muted hover:text-charcoal hover:bg-beige transition';
+    });
     if (filtre === 'toutes')   boutonToutes.className   = 'btn-filtre px-3 py-1.5 text-xs rounded-md font-medium bg-charcoal text-white transition';
     if (filtre === 'actives')  boutonActives.className  = 'btn-filtre px-3 py-1.5 text-xs rounded-md font-medium bg-charcoal text-white transition';
     if (filtre === 'archives') boutonArchives.className = 'btn-filtre px-3 py-1.5 text-xs rounded-md font-medium bg-charcoal text-white transition';
-    rendreGrilleCategories();
+    rendreGrilleCategories(estAdmin);
   }
 
   boutonToutes.addEventListener('click',   function() { activerFiltre('toutes');   });
@@ -390,42 +344,37 @@ function attacherEcouteursFiltres() {
 
   champRecherche.addEventListener('input', function() {
     recherche = champRecherche.value;
-    rendreGrilleCategories();
+    rendreGrilleCategories(estAdmin);
   });
 }
 
-
-function attacherEcouteursCategories(prenom) {
-  // Navigation navbar centralisée (voir navigation.js)
-  // Ici on garde uniquement la logique spécifique à la page.
+function attacherEcouteursCategories(prenom, estAdmin) {
   var lienCategories = document.getElementById('nav-categories');
   if (!lienCategories) return;
 
-  // Quand on clique sur « Catégories » depuis la vue détail,
-  // on remet la liste et on recharge les filtres.
   lienCategories.addEventListener('click', function(evenement) {
     evenement.preventDefault();
     categorieActive = null;
-    rendreVueListe();
-    attacherEcouteursFiltres();
+    rendreVueListe(estAdmin);
   });
 }
 
- tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            beige:         '#F5F0EA',
-            terracotta:    '#C97B5A',
-            'terra-light': '#E8A882',
-            'terra-pale':  '#F2DDD0',
-            charcoal:      '#2C2A27',
-            muted:         '#9B9589',
-          },
-          fontFamily: {
-            display: ['Cormorant Garamond', 'serif'],
-            body:    ['Inter', 'sans-serif'],
-          },
-        }
-      }
-    }
+// Fonctions Toasts et Panier issues directement de produits.js
+function afficherToast(message) {
+  var zone = document.getElementById('toast-zone');
+  if (!zone) return;
+  var toast = document.createElement('div');
+  toast.className = 'bg-charcoal text-white text-sm px-4 py-3 rounded-lg shadow-lg flex items-center gap-2';
+  toast.innerHTML = '<i class="fa-solid fa-check text-terra-light"></i> ' + message;
+  zone.appendChild(toast);
+  setTimeout(function() { toast.style.opacity = '0'; toast.style.transition = 'opacity .3s'; }, 1800);
+  setTimeout(function() { toast.remove(); }, 2200);
+}
+
+function mettreAJourCompteurPanier() {
+  var badge = document.getElementById('badge-panier');
+  if (!badge) return;
+  var n = compterArticlesPanier();
+  badge.textContent = n;
+  badge.classList.toggle('hidden', n === 0);
+}
