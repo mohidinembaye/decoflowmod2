@@ -416,7 +416,7 @@ export async function creerDevis(infosDevis) {
   if (!session) throw new Error('Vous devez être connecté pour faire une demande de devis.');
 
   var devis = {
-    utilisateurId:    session.id,
+    utilisateurId:    String(session.id),
     utilisateurNom:   session.nom,
     utilisateurEmail: session.email,
     entreprise:       session.entreprise || '',
@@ -461,7 +461,7 @@ export async function creerDevis(infosDevis) {
 
 export async function recupererDevisUtilisateur(utilisateurId) {
   try {
-    var url = API_DEVIS + '?utilisateurId=' + encodeURIComponent(utilisateurId) + '&_sort=dateDevis&_order=desc';
+    var url = API_DEVIS + '?utilisateurId=' + encodeURIComponent(String(utilisateurId)) + '&_sort=dateDevis&_order=desc';
     var reponse = await fetch(url);
     if (!reponse.ok) throw new Error('Erreur réseau');
     return await reponse.json();

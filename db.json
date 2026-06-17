@@ -335,9 +335,240 @@
         "paiement": "orange-money"
       },
       "id": 1
+    },
+    {
+      "utilisateurId": "1",
+      "utilisateurNom": "Aminata Diallo",
+      "utilisateurEmail": "client@decoflow.com",
+      "articles": [
+        {
+          "produitId": "p010",
+          "nom": "Bureau Exécutif Noyer",
+          "prix": 265000,
+          "image": "CONIM.png",
+          "categorie": "bureau",
+          "quantite": 1
+        }
+      ],
+      "total": 265000,
+      "statut": "Validée",
+      "dateCommande": "2026-06-16T16:46:04.936Z",
+      "livraison": {
+        "adresse": "jyffuyf",
+        "ville": "fgydt",
+        "telephone": "776543344",
+        "paiement": "wave"
+      },
+      "valideePar": "2",
+      "dateValidation": "2026-06-17T08:28:52.381Z",
+      "commentaireAdmin": "",
+      "id": 2
     }
   ],
-  "devis": [],
-  "notifications": [],
+  "devis": [
+    {
+      "utilisateurId": "1",
+      "utilisateurNom": "Aminata Diallo",
+      "utilisateurEmail": "client@decoflow.com",
+      "entreprise": "Particulier",
+      "produitId": null,
+      "produitNom": "je veux des meubles de salon",
+      "quantite": 1,
+      "message": "je veux des meubles de salon",
+      "statut": "Devis envoyé",
+      "montantPropose": null,
+      "reponseAdmin": "",
+      "dateDevis": "2026-06-17T08:35:39.635Z",
+      "dateMiseAJour": "2026-06-17T08:36:24.282Z",
+      "id": 1,
+      "produits": [
+        {
+          "nom": "dfj,f",
+          "quantite": 1,
+          "prixUnitaire": 0,
+          "total": 0
+        },
+        {
+          "nom": "rgfjk,n",
+          "quantite": 1,
+          "prixUnitaire": 0,
+          "total": 0
+        }
+      ],
+      "montantHT": 0,
+      "montantTTC": 0
+    },
+    {
+      "utilisateurId": "1",
+      "utilisateurNom": "Aminata Diallo",
+      "utilisateurEmail": "client@decoflow.com",
+      "entreprise": "Particulier",
+      "produitId": null,
+      "produitNom": "fvfjl rg",
+      "quantite": 1,
+      "message": "fvfjl rg",
+      "statut": "Accepté",
+      "montantPropose": null,
+      "reponseAdmin": "",
+      "dateDevis": "2026-06-17T08:50:16.923Z",
+      "dateMiseAJour": "2026-06-17T08:51:40.624Z",
+      "id": 2,
+      "produits": [
+        {
+          "nom": "r",
+          "quantite": 1,
+          "prixUnitaire": 0,
+          "total": 0
+        }
+      ],
+      "montantHT": 0,
+      "montantTTC": 0
+    }
+  ],
+  "notifications": [
+    {
+      "type": "commande",
+      "titre": "Nouvelle commande en attente",
+      "message": "Aminata Diallo a passé une commande de 265 000 Fcfa",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "admin",
+      "adminId": "2",
+      "lue": false,
+      "date": "2026-06-16T16:46:04.995Z",
+      "id": 1
+    },
+    {
+      "type": "commande",
+      "titre": "Nouvelle commande en attente",
+      "message": "Aminata Diallo a passé une commande de 265 000 Fcfa",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "admin",
+      "adminId": "3",
+      "lue": false,
+      "date": "2026-06-16T16:46:05.012Z",
+      "id": 2
+    },
+    {
+      "type": "commande",
+      "titre": "Votre commande a été validée",
+      "message": "Votre commande #2 a été validée par Karim Mbaye",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "client",
+      "adminId": "1",
+      "lue": false,
+      "date": "2026-06-17T08:28:52.392Z",
+      "id": 3
+    },
+    {
+      "type": "devis",
+      "titre": "Nouvelle demande de devis",
+      "message": "Aminata Diallo a demandé un devis pour \"je veux des meubles de salon\"",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 1,
+      "cible": "admin",
+      "adminId": "2",
+      "lue": false,
+      "date": "2026-06-17T08:35:39.711Z",
+      "id": 4
+    },
+    {
+      "type": "devis",
+      "titre": "Nouvelle demande de devis",
+      "message": "Aminata Diallo a demandé un devis pour \"je veux des meubles de salon\"",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 1,
+      "cible": "admin",
+      "adminId": "3",
+      "lue": false,
+      "date": "2026-06-17T08:35:39.719Z",
+      "id": 5
+    },
+    {
+      "type": "devis",
+      "titre": "Votre devis est prêt",
+      "message": "Un devis de 0 Fcfa vous a été envoyé.",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 1,
+      "cible": "client",
+      "adminId": "1",
+      "lue": false,
+      "date": "2026-06-17T08:36:24.317Z",
+      "id": 6
+    },
+    {
+      "type": "devis",
+      "titre": "Nouvelle demande de devis",
+      "message": "Aminata Diallo a demandé un devis pour \"fvfjl rg\"",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "admin",
+      "adminId": "2",
+      "lue": false,
+      "date": "2026-06-17T08:50:17.034Z",
+      "id": 7
+    },
+    {
+      "type": "devis",
+      "titre": "Nouvelle demande de devis",
+      "message": "Aminata Diallo a demandé un devis pour \"fvfjl rg\"",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "admin",
+      "adminId": "3",
+      "lue": false,
+      "date": "2026-06-17T08:50:17.048Z",
+      "id": 8
+    },
+    {
+      "type": "devis",
+      "titre": "Votre devis est prêt",
+      "message": "Un devis de 0 Fcfa vous a été envoyé.",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "client",
+      "adminId": "1",
+      "lue": false,
+      "date": "2026-06-17T08:51:03.659Z",
+      "id": 9
+    },
+    {
+      "type": "devis",
+      "titre": "Devis accepté par Aminata Diallo",
+      "message": "Devis accepté par Aminata Diallo",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "admin",
+      "adminId": "2",
+      "lue": false,
+      "date": "2026-06-17T08:51:40.656Z",
+      "id": 10
+    },
+    {
+      "type": "devis",
+      "titre": "Devis accepté par Aminata Diallo",
+      "message": "Devis accepté par Aminata Diallo",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 2,
+      "cible": "admin",
+      "adminId": "3",
+      "lue": false,
+      "date": "2026-06-17T08:51:40.668Z",
+      "id": 11
+    }
+  ],
   "$schema": "./node_modules/json-server/schema.json"
 }

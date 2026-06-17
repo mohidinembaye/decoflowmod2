@@ -3,18 +3,23 @@ import {
   lireSession,
   recupererCommandesUtilisateur,
   recupererToutesLesCommandes,
-  modifierStatutCommande
+  modifierStatutCommande,
+  validerCommande,
+  refuserCommande
 } from './db.js';
 
 // ─── Déclarations ─────────────────────────────────────────────────────────────
 
-var STATUTS_COMMANDE = ['En préparation', 'Expédié', 'Livré', 'Annulé'];
+var STATUTS_COMMANDE = ['En attente de validation', 'En préparation', 'Expédié', 'Livré', 'Annulé', 'Validée', 'Refusée'];
 
 var COULEURS_STATUT = {
-  'En préparation': 'bg-orange-50 text-orange-600',
-  'Expédié':        'bg-blue-50 text-blue-600',
-  'Livré':          'bg-green-50 text-green-600',
-  'Annulé':         'bg-red-50 text-red-600'
+  'En attente de validation': 'bg-yellow-50 text-yellow-700',
+  'En préparation':           'bg-orange-50 text-orange-600',
+  'Expédié':                  'bg-blue-50 text-blue-600',
+  'Livré':                    'bg-green-50 text-green-600',
+  'Annulé':                   'bg-red-50 text-red-600',
+  'Validée':                  'bg-emerald-50 text-emerald-600',
+  'Refusée':                  'bg-red-100 text-red-700'
 };
 
 // ─── Rendu page ───────────────────────────────────────────────────────────────
@@ -141,15 +146,15 @@ function rendreStatsCommandes(commandes) {
   var zone = document.getElementById('stats-commandes');
   if (!zone) return;
 
-  var totalRevenu = commandes.reduce(function(s, c) { return s + (c.total || 0); }, 0);
-  var nbEnCours   = commandes.filter(function(c) { return c.statut === 'En préparation'; }).length;
-  var nbExpedies  = commandes.filter(function(c) { return c.statut === 'Expédié'; }).length;
-  var nbLivres    = commandes.filter(function(c) { return c.statut === 'Livré'; }).length;
+  var totalRevenu   = commandes.reduce(function(s, c) { return s + (c.total || 0); }, 0);
+  var nbEnAttente   = commandes.filter(function(c) { return c.statut === 'En attente de validation'; }).length;
+  var nbEnCours     = commandes.filter(function(c) { return c.statut === 'En préparation'; }).length;
+  var nbExpedies    = commandes.filter(function(c) { return c.statut === 'Expédié'; }).length;
 
   var stats = [
-    { label: 'Total commandes', valeur: commandes.length,                     icone: 'fa-solid fa-receipt',         couleur: 'text-charcoal' },
-    { label: 'En préparation',  valeur: nbEnCours,                            icone: 'fa-solid fa-clock',           couleur: 'text-orange-500' },
-    { label: 'Expédiées',       valeur: nbExpedies,                           icone: 'fa-solid fa-truck',           couleur: 'text-blue-500' },
+    { label: 'Total commandes', valeur: commandes.length,   icone: 'fa-solid fa-receipt',       couleur: 'text-charcoal' },
+    { label: 'En attente',      valeur: nbEnAttente,         icone: 'fa-solid fa-hourglass-half', couleur: 'text-yellow-600' },
+    { label: 'En préparation',  valeur: nbEnCours,           icone: 'fa-solid fa-clock',          couleur: 'text-orange-500' },
     { label: 'Chiffre d\'affaires', valeur: totalRevenu.toLocaleString('fr-FR') + ' Fcfa', icone: 'fa-solid fa-coins', couleur: 'text-terracotta' }
   ];
 
@@ -224,16 +229,41 @@ function creerCarteCommande(cmd, estAdmin) {
       ` : ''}
 
       ${estAdmin ? `
-        <div class="mt-4 flex items-center gap-3 flex-wrap border-t border-gray-200 pt-3">
-          <label class="text-xs text-muted">Modifier le statut :</label>
-          <select data-statut-id="${cmd.id}" class="select-statut-commande border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-terracotta">
-            ${STATUTS_COMMANDE.map(function(s) {
-              return '<option value="' + s + '"' + (s === cmd.statut ? ' selected' : '') + '>' + s + '</option>';
-            }).join('')}
-          </select>
-          <button data-annuler-id="${cmd.id}" class="${cmd.statut === 'Annulé' ? 'hidden' : ''} text-xs text-red-400 hover:text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition">
-            <i class="fa-solid fa-ban"></i> Annuler
-          </button>
+        <div class="zone-actions-admin mt-4 border-t border-gray-200 pt-3">
+          ${cmd.statut === 'En attente de validation' ? `
+            <div class="flex items-center gap-3 flex-wrap">
+              <span class="text-xs text-yellow-700 font-medium flex items-center gap-1.5">
+                <i class="fa-solid fa-clock"></i> En attente de votre décision
+              </span>
+              <div class="flex gap-2 ml-auto">
+                <button data-valider-id="${cmd.id}" class="btn-valider flex items-center gap-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg px-4 py-2 transition">
+                  <i class="fa-solid fa-check"></i> Valider
+                </button>
+                <button data-refuser-id="${cmd.id}" class="btn-refuser flex items-center gap-1.5 text-xs font-semibold text-white bg-red-500 hover:bg-red-600 rounded-lg px-4 py-2 transition">
+                  <i class="fa-solid fa-xmark"></i> Refuser
+                </button>
+              </div>
+            </div>
+            <div id="motif-refus-${cmd.id}" class="hidden mt-3">
+              <textarea data-motif-id="${cmd.id}" rows="2" placeholder="Motif du refus (optionnel)…" class="w-full border border-red-200 rounded-lg px-3 py-2 text-xs text-charcoal focus:outline-none focus:border-red-400 resize-none"></textarea>
+              <div class="flex gap-2 mt-2 justify-end">
+                <button data-annuler-motif="${cmd.id}" class="text-xs text-muted border border-gray-200 rounded-lg px-3 py-1.5 hover:bg-gray-50">Annuler</button>
+                <button data-confirmer-refus="${cmd.id}" class="text-xs text-white bg-red-500 hover:bg-red-600 rounded-lg px-3 py-1.5 transition">Confirmer le refus</button>
+              </div>
+            </div>
+          ` : `
+            <div class="flex items-center gap-3 flex-wrap">
+              <label class="text-xs text-muted">Modifier le statut :</label>
+              <select data-statut-id="${cmd.id}" class="select-statut-commande border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-terracotta">
+                ${['En préparation', 'Expédié', 'Livré', 'Annulé'].map(function(s) {
+                  return '<option value="' + s + '"' + (s === cmd.statut ? ' selected' : '') + '>' + s + '</option>';
+                }).join('')}
+              </select>
+              <button data-annuler-id="${cmd.id}" class="${(cmd.statut === 'Annulé' || cmd.statut === 'Refusée') ? 'hidden' : ''} text-xs text-red-400 hover:text-red-600 border border-red-200 rounded-lg px-3 py-1.5 hover:bg-red-50 transition">
+                <i class="fa-solid fa-ban"></i> Annuler
+              </button>
+            </div>
+          `}
         </div>
       ` : ''}
     </div>
@@ -250,8 +280,69 @@ function creerCarteCommande(cmd, estAdmin) {
       : 'fa-solid fa-chevron-up text-[10px] icone-toggle';
   });
 
-  // Select statut (admin)
+  // Écouteurs admin
   if (estAdmin) {
+
+    // ── Bouton Valider ────────────────────────────────────────────────────────
+    var btnValider = carte.querySelector('button[data-valider-id]');
+    if (btnValider) {
+      btnValider.addEventListener('click', async function() {
+        btnValider.disabled = true;
+        btnValider.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Validation…';
+        try {
+          await validerCommande(cmd.id);
+          cmd.statut = 'Validée';
+          mettreAJourBadgeStatut(carte, 'Validée');
+          remplacerZoneActionsParStatut(carte, cmd, 'Validée');
+          afficherToast('Commande #' + cmd.id + ' validée ✓');
+        } catch (err) {
+          alert(err.message || 'Erreur lors de la validation');
+          btnValider.disabled = false;
+          btnValider.innerHTML = '<i class="fa-solid fa-check"></i> Valider';
+        }
+      });
+    }
+
+    // ── Bouton Refuser (ouvre le champ motif) ─────────────────────────────────
+    var btnRefuser = carte.querySelector('button[data-refuser-id]');
+    var zoneMotif  = carte.querySelector('#motif-refus-' + cmd.id);
+    if (btnRefuser && zoneMotif) {
+      btnRefuser.addEventListener('click', function() {
+        zoneMotif.classList.toggle('hidden');
+        btnRefuser.classList.toggle('hidden');
+      });
+
+      var btnAnnulerMotif = zoneMotif.querySelector('button[data-annuler-motif]');
+      if (btnAnnulerMotif) {
+        btnAnnulerMotif.addEventListener('click', function() {
+          zoneMotif.classList.add('hidden');
+          btnRefuser.classList.remove('hidden');
+        });
+      }
+
+      var btnConfirmerRefus = zoneMotif.querySelector('button[data-confirmer-refus]');
+      if (btnConfirmerRefus) {
+        btnConfirmerRefus.addEventListener('click', async function() {
+          var textarea = zoneMotif.querySelector('textarea[data-motif-id]');
+          var motif    = textarea ? textarea.value.trim() : '';
+          btnConfirmerRefus.disabled = true;
+          btnConfirmerRefus.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i>';
+          try {
+            await refuserCommande(cmd.id, motif);
+            cmd.statut = 'Refusée';
+            mettreAJourBadgeStatut(carte, 'Refusée');
+            remplacerZoneActionsParStatut(carte, cmd, 'Refusée');
+            afficherToast('Commande #' + cmd.id + ' refusée');
+          } catch (err) {
+            alert(err.message || 'Erreur lors du refus');
+            btnConfirmerRefus.disabled = false;
+            btnConfirmerRefus.innerHTML = 'Confirmer le refus';
+          }
+        });
+      }
+    }
+
+    // ── Select statut (commandes déjà traitées) ───────────────────────────────
     var selectStatut = carte.querySelector('select[data-statut-id]');
     if (selectStatut) {
       selectStatut.addEventListener('change', async function() {
@@ -259,11 +350,7 @@ function creerCarteCommande(cmd, estAdmin) {
         try {
           await modifierStatutCommande(cmd.id, nouveauStatut);
           cmd.statut = nouveauStatut;
-          var badge = carte.querySelector('.statut-badge');
-          if (badge) {
-            badge.textContent = nouveauStatut;
-            badge.className = 'statut-badge text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-sm ' + (COULEURS_STATUT[nouveauStatut] || 'bg-beige text-muted');
-          }
+          mettreAJourBadgeStatut(carte, nouveauStatut);
           afficherToast('Statut mis à jour : ' + nouveauStatut);
         } catch (err) {
           alert(err.message || 'Erreur lors de la mise à jour');
@@ -272,6 +359,7 @@ function creerCarteCommande(cmd, estAdmin) {
       });
     }
 
+    // ── Bouton Annuler ────────────────────────────────────────────────────────
     var boutonAnnuler = carte.querySelector('button[data-annuler-id]');
     if (boutonAnnuler) {
       boutonAnnuler.addEventListener('click', async function() {
@@ -280,11 +368,7 @@ function creerCarteCommande(cmd, estAdmin) {
           await modifierStatutCommande(cmd.id, 'Annulé');
           cmd.statut = 'Annulé';
           if (selectStatut) selectStatut.value = 'Annulé';
-          var badge = carte.querySelector('.statut-badge');
-          if (badge) {
-            badge.textContent = 'Annulé';
-            badge.className = 'statut-badge text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-sm ' + COULEURS_STATUT['Annulé'];
-          }
+          mettreAJourBadgeStatut(carte, 'Annulé');
           boutonAnnuler.classList.add('hidden');
           afficherToast('Commande annulée');
         } catch (err) {
@@ -295,6 +379,56 @@ function creerCarteCommande(cmd, estAdmin) {
   }
 
   return carte;
+}
+
+// ─── Utilitaires carte ────────────────────────────────────────────────────────
+
+function mettreAJourBadgeStatut(carte, statut) {
+  var badge = carte.querySelector('.statut-badge');
+  if (!badge) return;
+  badge.textContent = statut;
+  badge.className = 'statut-badge text-[10px] font-semibold uppercase tracking-wider px-2 py-1 rounded-sm ' + (COULEURS_STATUT[statut] || 'bg-beige text-muted');
+}
+
+function remplacerZoneActionsParStatut(carte, cmd, statut) {
+  var zone = carte.querySelector('.zone-actions-admin');
+  if (!zone) return;
+
+  var STATUTS_POST_VALIDATION = ['En préparation', 'Expédié', 'Livré', 'Annulé'];
+
+  if (statut === 'Validée') {
+    zone.innerHTML = `
+      <div class="flex items-center gap-3 flex-wrap">
+        <label class="text-xs text-muted">Modifier le statut :</label>
+        <select data-statut-id="${cmd.id}" class="select-statut-commande border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-terracotta">
+          ${STATUTS_POST_VALIDATION.map(function(s) {
+            return '<option value="' + s + '">' + s + '</option>';
+          }).join('')}
+        </select>
+      </div>
+    `;
+    var select = zone.querySelector('select[data-statut-id]');
+    if (select) {
+      select.addEventListener('change', async function() {
+        var nv = select.value;
+        try {
+          await modifierStatutCommande(cmd.id, nv);
+          cmd.statut = nv;
+          mettreAJourBadgeStatut(carte, nv);
+          afficherToast('Statut mis à jour : ' + nv);
+        } catch (err) {
+          alert(err.message || 'Erreur');
+          select.value = cmd.statut;
+        }
+      });
+    }
+  } else if (statut === 'Refusée') {
+    zone.innerHTML = `
+      <p class="text-xs text-red-500 flex items-center gap-1.5">
+        <i class="fa-solid fa-ban"></i> Commande refusée — aucune action possible.
+      </p>
+    `;
+  }
 }
 
 // ─── Écouteurs ────────────────────────────────────────────────────────────────
