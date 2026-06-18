@@ -22,12 +22,14 @@
     },
     {
       "id": "2",
-      "nom": "Karim Mbaye",
+      "nom": "Mohidine Mbaye",
       "email": "admin@decoflow.com",
       "motDePasse": "admin123",
       "entreprise": "DecoFlow",
       "role": "admin",
-      "dateInscription": "2024-01-01T08:00:00.000Z"
+      "dateInscription": "2024-01-01T08:00:00.000Z",
+      "biographie": "",
+      "telephone": ""
     },
     {
       "id": "3",
@@ -50,18 +52,28 @@
           "users": false
         }
       }
+    },
+    {
+      "nom": "frjn,rfj,",
+      "email": "frkrfjv@gmail.com",
+      "telephone": "773450978",
+      "ville": "ldk",
+      "statut": "prospect",
+      "role": "client",
+      "initiales": "F",
+      "couleurAvatar": "bg-[#9B9589]",
+      "totalDepense": 0,
+      "projets": 0,
+      "id": "d2NyzUz"
     }
   ],
   "produits": [
     {
-      "id": "p001",
       "nom": "Canapé Velours Taupe",
       "categorie": "mobilier",
-      "prix": 185000,
-      "image": "canape.jpeg",
-      "vedette": true,
+      "prix": 185008,
       "stock": 12,
-      "description": "Canapé 3 places en velours taupe, structure en bois massif."
+      "id": "p001"
     },
     {
       "id": "p002",
@@ -327,7 +339,7 @@
       ],
       "total": 265000,
       "statut": "En préparation",
-      "dateCommande": "2026-06-15T12:30:26.600Z",
+      "dateCommande": "2026-06-17T12:30:26.600Z",
       "livraison": {
         "adresse": "hann mariste",
         "ville": "dakar",
@@ -352,7 +364,7 @@
       ],
       "total": 265000,
       "statut": "Validée",
-      "dateCommande": "2026-06-16T16:46:04.936Z",
+      "dateCommande": "2026-06-17T16:46:04.936Z",
       "livraison": {
         "adresse": "jyffuyf",
         "ville": "fgydt",
@@ -363,6 +375,93 @@
       "dateValidation": "2026-06-17T08:28:52.381Z",
       "commentaireAdmin": "",
       "id": 2
+    },
+    {
+      "utilisateurId": "1",
+      "utilisateurNom": "Aminata Diallo",
+      "utilisateurEmail": "client@decoflow.com",
+      "articles": [
+        {
+          "produitId": "p001",
+          "nom": "Canapé Velours Taupe",
+          "prix": 185008,
+          "categorie": "mobilier",
+          "quantite": 1
+        },
+        {
+          "produitId": "p003",
+          "nom": "Chaise Lounge Naturel",
+          "prix": 94000,
+          "image": "inscim.png",
+          "categorie": "mobilier",
+          "quantite": 1
+        },
+        {
+          "produitId": "p006",
+          "nom": "Lit Plateforme Chêne",
+          "prix": 320000,
+          "image": "CONIM.png",
+          "categorie": "mobilier",
+          "quantite": 1
+        }
+      ],
+      "total": 599008,
+      "statut": "Validée",
+      "dateCommande": "2026-06-17T18:52:19.116Z",
+      "livraison": {
+        "adresse": "l_uloiu",
+        "ville": ":;hvvhb;k",
+        "telephone": "mhglmh",
+        "paiement": "livraison"
+      },
+      "valideePar": "2",
+      "dateValidation": "2026-06-17T18:54:03.429Z",
+      "commentaireAdmin": "",
+      "id": 3
+    },
+    {
+      "utilisateurId": "1",
+      "utilisateurNom": "Aminata Diallo",
+      "utilisateurEmail": "client@decoflow.com",
+      "articles": [
+        {
+          "produitId": "p014",
+          "nom": "Applique Murale Globe",
+          "prix": 35000,
+          "image": "bureau.png",
+          "categorie": "luminaire",
+          "quantite": 1
+        },
+        {
+          "produitId": "p019",
+          "nom": "Bibliothèque Métal",
+          "prix": 198000,
+          "image": "CONIM.png",
+          "categorie": "rangement",
+          "quantite": 1
+        },
+        {
+          "produitId": "p010",
+          "nom": "Bureau Exécutif Noyer",
+          "prix": 265000,
+          "image": "CONIM.png",
+          "categorie": "bureau",
+          "quantite": 1
+        }
+      ],
+      "total": 498000,
+      "statut": "En attente de validation",
+      "dateCommande": "2026-06-18T07:50:35.174Z",
+      "livraison": {
+        "adresse": "ftddt",
+        "ville": "hg",
+        "telephone": "ghd",
+        "paiement": "livraison"
+      },
+      "valideePar": null,
+      "dateValidation": null,
+      "commentaireAdmin": "",
+      "id": 4
     }
   ],
   "devis": [
@@ -429,7 +528,7 @@
     {
       "type": "commande",
       "titre": "Nouvelle commande en attente",
-      "message": "Aminata Diallo a passé une commande de 265 000 Fcfa",
+      "message": "Aminata Diallo a passé une commande de 265 000 Fcfa",
       "clientNom": "Aminata Diallo",
       "clientEmail": "client@decoflow.com",
       "referenceId": 2,
@@ -442,7 +541,7 @@
     {
       "type": "commande",
       "titre": "Nouvelle commande en attente",
-      "message": "Aminata Diallo a passé une commande de 265 000 Fcfa",
+      "message": "Aminata Diallo a passé une commande de 265 000 Fcfa",
       "clientNom": "Aminata Diallo",
       "clientEmail": "client@decoflow.com",
       "referenceId": 2,
@@ -568,6 +667,71 @@
       "lue": false,
       "date": "2026-06-17T08:51:40.668Z",
       "id": 11
+    },
+    {
+      "type": "commande",
+      "titre": "Nouvelle commande en attente",
+      "message": "Aminata Diallo a passé une commande de 599 008 Fcfa",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 3,
+      "cible": "admin",
+      "adminId": "2",
+      "lue": false,
+      "date": "2026-06-17T18:52:19.168Z",
+      "id": 12
+    },
+    {
+      "type": "commande",
+      "titre": "Nouvelle commande en attente",
+      "message": "Aminata Diallo a passé une commande de 599 008 Fcfa",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 3,
+      "cible": "admin",
+      "adminId": "3",
+      "lue": false,
+      "date": "2026-06-17T18:52:19.187Z",
+      "id": 13
+    },
+    {
+      "type": "commande",
+      "titre": "Votre commande a été validée",
+      "message": "Votre commande #3 a été validée par Mohidine Mbaye",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 3,
+      "cible": "client",
+      "adminId": "1",
+      "lue": false,
+      "date": "2026-06-17T18:54:03.445Z",
+      "id": 14
+    },
+    {
+      "type": "commande",
+      "titre": "Nouvelle commande en attente",
+      "message": "Aminata Diallo a passé une commande de 498 000 Fcfa",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 4,
+      "cible": "admin",
+      "adminId": "2",
+      "lue": false,
+      "date": "2026-06-18T07:50:35.221Z",
+      "id": 15
+    },
+    {
+      "type": "commande",
+      "titre": "Nouvelle commande en attente",
+      "message": "Aminata Diallo a passé une commande de 498 000 Fcfa",
+      "clientNom": "Aminata Diallo",
+      "clientEmail": "client@decoflow.com",
+      "referenceId": 4,
+      "cible": "admin",
+      "adminId": "3",
+      "lue": false,
+      "date": "2026-06-18T07:50:35.240Z",
+      "id": 16
     }
   ],
   "$schema": "./node_modules/json-server/schema.json"

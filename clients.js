@@ -6,26 +6,10 @@ import { afficherPageProduits }   from './produits.js';
 import { afficherPageCommandes }  from './commandes.js';
 import { attacherNavigationNavbar } from './navigation.js';
 
+// ─── Configuration & Variables Globales ───────────────────────────────────────
+const API_URL_UTILISATEURS = 'http://localhost:3001/utilisateurs';
 
-
-
-// ─── Données
-
-var donneesClients = [
-  { id: 'CL-001', nom: 'Awa Diop',        initiales: 'AD', couleurAvatar: 'bg-[#C4A882]', email: 'awa.diop@gmail.com',       telephone: '+221 77 123 45 67', ville: 'Dakar',       projets: 3, totalDepense: 7450000, statut: 'actif',    dateInscription: '10 Jan. 2024' },
-  { id: 'CL-002', nom: 'Moussa Ndiaye',   initiales: 'MN', couleurAvatar: 'bg-[#2C2A27]', email: 'mndiaye@outlook.com',      telephone: '+221 78 234 56 78', ville: 'Plateau',     projets: 5, totalDepense: 18900000, statut: 'actif',   dateInscription: '15 Jan. 2024' },
-  { id: 'CL-003', nom: 'Fatou Sy',        initiales: 'FS', couleurAvatar: 'bg-[#C97B5A]', email: 'fatou.sy@yahoo.fr',        telephone: '+221 76 345 67 89', ville: 'Rufisque',    projets: 2, totalDepense: 2100000, statut: 'actif',    dateInscription: '20 Jan. 2024' },
-  { id: 'CL-004', nom: 'Ibrahima Bâ',    initiales: 'IB', couleurAvatar: 'bg-[#E8A882]', email: 'i.ba@decoplus.sn',         telephone: '+221 70 456 78 90', ville: 'Saint-Louis', projets: 4, totalDepense: 12300000, statut: 'inactif', dateInscription: '02 Fév. 2024' },
-  { id: 'CL-005', nom: 'Khadija Fall',    initiales: 'KF', couleurAvatar: 'bg-[#9B9589]', email: 'khadija.fall@gmail.com',   telephone: '+221 77 567 89 01', ville: 'Ngor',        projets: 1, totalDepense: 850000,  statut: 'actif',    dateInscription: '08 Fév. 2024' },
-  { id: 'CL-006', nom: 'Omar Sarr',       initiales: 'OS', couleurAvatar: 'bg-[#C4A882]', email: 'omar.sarr@sarr-archi.com', telephone: '+221 78 678 90 12', ville: 'Médina',      projets: 2, totalDepense: 5600000, statut: 'actif',    dateInscription: '14 Fév. 2024' },
-  { id: 'CL-007', nom: 'Aïssatou Diallo', initiales: 'AD', couleurAvatar: 'bg-[#F2DDD0]', email: 'aissatou.d@gmail.com',    telephone: '+221 76 789 01 23', ville: 'Fann',        projets: 1, totalDepense: 920000,  statut: 'prospect', dateInscription: '19 Fév. 2024' },
-  { id: 'CL-008', nom: 'Seydou Mbaye',    initiales: 'SM', couleurAvatar: 'bg-[#2C2A27]', email: 's.mbaye@mbayegroup.sn',    telephone: '+221 70 890 12 34', ville: 'Saly',        projets: 6, totalDepense: 22400000, statut: 'actif',   dateInscription: '25 Fév. 2024' },
-  { id: 'CL-009', nom: 'Rokhaya Thiam',   initiales: 'RT', couleurAvatar: 'bg-[#C97B5A]', email: 'rokhaya.t@hotmail.fr',    telephone: '+221 77 901 23 45', ville: 'Dakar',       projets: 2, totalDepense: 3200000, statut: 'actif',    dateInscription: '03 Mar. 2024' },
-  { id: 'CL-010', nom: 'Cheikh Gaye',     initiales: 'CG', couleurAvatar: 'bg-[#9B9589]', email: 'cheikh.gaye@gmail.com',    telephone: '+221 78 012 34 56', ville: 'Thiès',       projets: 1, totalDepense: 1500000, statut: 'inactif', dateInscription: '10 Mar. 2024' },
-  { id: 'CL-011', nom: 'Mariama Cissé',   initiales: 'MC', couleurAvatar: 'bg-[#E8A882]', email: 'm.cisse@cisse-deco.sn',   telephone: '+221 76 123 45 67', ville: 'Dakar',       projets: 3, totalDepense: 8700000, statut: 'actif',    dateInscription: '15 Mar. 2024' },
-  { id: 'CL-012', nom: 'Lamine Diouf',    initiales: 'LD', couleurAvatar: 'bg-[#C4A882]', email: 'lamine.diouf@yahoo.fr',   telephone: '+221 70 234 56 78', ville: 'Ziguinchor',  projets: 2, totalDepense: 4100000, statut: 'prospect', dateInscription: '20 Mar. 2024' },
-];
-
+var donneesClients = []; // Tableau dynamique connecté à db.json
 var filtreStatutActif   = 'tous';
 var filtreRechercheClients = '';
 var pageActuelle        = 1;
@@ -51,7 +35,7 @@ function badgeStatutClient(statut) {
 }
 
 function formaterMontantClient(valeur) {
-  return valeur.toLocaleString('fr-FR') + ' FCFA';
+  return (valeur || 0).toLocaleString('fr-FR') + ' FCFA';
 }
 
 function filtrerClients() {
@@ -61,17 +45,53 @@ function filtrerClients() {
 
     var correspondRecherche =
       filtreRechercheClients === '' ||
-      cl.nom.toLowerCase().includes(filtreRechercheClients.toLowerCase()) ||
-      cl.email.toLowerCase().includes(filtreRechercheClients.toLowerCase()) ||
-      cl.ville.toLowerCase().includes(filtreRechercheClients.toLowerCase());
+      (cl.nom && cl.nom.toLowerCase().includes(filtreRechercheClients.toLowerCase())) ||
+      (cl.email && cl.email.toLowerCase().includes(filtreRechercheClients.toLowerCase())) ||
+      (cl.ville && cl.ville.toLowerCase().includes(filtreRechercheClients.toLowerCase()));
 
     return correspondStatut && correspondRecherche;
   });
 }
 
+// ─── Récupération de l'API db.json ───────────────────────────────────────────
+
+async function chargerClientsDepuisAPI() {
+  try {
+    var reponse = await fetch(API_URL_UTILISATEURS);
+    if (!reponse.ok) throw new Error('Impossible de récupérer les clients.');
+    
+    var tousLesUtilisateurs = await reponse.json();
+    
+    // On isole les utilisateurs qui possèdent le rôle 'client' ou n'ont pas de rôle défini
+    donneesClients = tousLesUtilisateurs.filter(function(user) {
+      return !user.role || user.role === 'client'; 
+    });
+
+    // Nettoyage et complétion des propriétés par défaut
+    donneesClients.forEach(function(cl) {
+      if (!cl.nom) cl.nom = "Client Anonyme";
+      if (!cl.initiales) {
+        var morceaux = cl.nom.split(' ');
+        cl.initiales = morceaux.length > 1 ? morceaux[0][0] + morceaux[1][0] : morceaux[0][0];
+      }
+      if (!cl.couleurAvatar) cl.couleurAvatar = 'bg-[#C4A882]';
+      if (!cl.statut)        cl.statut = 'actif';
+      if (!cl.totalDepense)  cl.totalDepense = 0;
+      if (!cl.projets)       cl.projets = 0;
+      if (!cl.email)         cl.email = "Non renseigné";
+      if (!cl.telephone)     cl.telephone = "Non renseigné";
+      if (!cl.ville)         cl.ville = "Dakar";
+    });
+
+  } catch (erreur) {
+    console.error("Erreur de liaison API db.json :", erreur);
+    donneesClients = []; 
+  }
+}
+
 // ─── Affichage principal ──────────────────────────────────────────────────────
 
-export function afficherPageClients(prenomUtilisateur) {
+export async function afficherPageClients(prenomUtilisateur) {
   history.pushState({ page: 'clients', nom: prenomUtilisateur }, '', '#clients');
 
   var conteneurApp = document.getElementById('app');
@@ -81,10 +101,18 @@ export function afficherPageClients(prenomUtilisateur) {
   filtreRechercheClients = '';
   pageActuelle           = 1;
 
+  // Chargement asynchrone des données réelles depuis le db.json
+  await chargerClientsDepuisAPI();
+
   conteneurApp.className = 'w-full';
 
   document.getElementById('corps-application').className =
     'font-body bg-beige min-h-screen block p-0 transition-all duration-300';
+
+  // Calculs en temps réel pour la section KPI
+  var totalClientsEnregistres = donneesClients.length;
+  var totalClientsActifs = donneesClients.filter(c => c.statut === 'actif').length;
+  var sommeChiffreAffaires = donneesClients.reduce((acc, c) => acc + (c.totalDepense || 0), 0).toLocaleString('fr-FR');
 
   conteneurApp.innerHTML = `
     <div id="page-clients" class="animer-fond w-full min-h-screen bg-beige flex flex-col">
@@ -107,9 +135,6 @@ export function afficherPageClients(prenomUtilisateur) {
         </nav>
 
         <div id="navbar-droite" class="flex items-center gap-4">
-          <button type="button" aria-label="Rechercher" class="text-muted hover:text-charcoal transition">
-            <i class="fa-solid fa-magnifying-glass text-sm"></i>
-          </button>
           <div id="profil-utilisateur" class="flex items-center gap-2 cursor-pointer">
             <span class="text-sm font-medium text-charcoal hidden sm:block">${prenom}</span>
             <div class="w-8 h-8 rounded-full bg-terra-pale flex items-center justify-center overflow-hidden">
@@ -124,48 +149,39 @@ export function afficherPageClients(prenomUtilisateur) {
       <main id="contenu-clients" class="flex-1 px-6 py-8 max-w-6xl mx-auto w-full">
 
         <!-- En-tête section -->
-        <div class="mb-6 border border-dashed border-gray-200 rounded-xl p-6 bg-white flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-          <div>
-            <h1 class="font-display text-4xl font-semibold text-charcoal mb-1">Gestion des Clients</h1>
-            <p class="text-sm text-muted">Répertoire & suivi clientèle</p>
-          </div>
-          <button id="bouton-nouveau-client" type="button"
-            class="flex items-center gap-2 bg-charcoal text-white text-xs uppercase tracking-widest px-5 py-3 hover:bg-terracotta transition-colors duration-200 whitespace-nowrap self-start">
-            <i class="fa-solid fa-plus text-xs"></i> Nouveau Client
-          </button>
+        <div class="mb-6 border border-dashed border-gray-200 rounded-xl p-6 bg-white">
+          <h1 class="font-display text-4xl font-semibold text-charcoal mb-1">Gestion des Clients</h1>
+          <p class="text-sm text-muted">Répertoire & suivi clientèle en temps réel</p>
         </div>
 
-        <!-- KPI -->
+        <!-- KPI Dynamiques -->
         <div id="section-kpi-clients" class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
 
           <div class="bg-white rounded-xl p-5 border border-gray-100">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs text-muted uppercase tracking-wider">Total Clients</span>
-              <span class="text-[10px] bg-green-50 text-green-600 px-2 py-0.5 rounded-full font-semibold">+3 ce mois</span>
             </div>
             <i class="fa-regular fa-user text-muted text-sm mb-2 block"></i>
-            <p class="text-3xl font-semibold text-charcoal font-display">12</p>
-            <p class="text-xs text-muted mt-1">Clients enregistrés</p>
+            <p class="text-3xl font-semibold text-charcoal font-display">${totalClientsEnregistres}</p>
+            <p class="text-xs text-muted mt-1">Enregistrés dans la base</p>
           </div>
 
           <div class="bg-white rounded-xl p-5 border border-gray-100">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs text-muted uppercase tracking-wider">Clients Actifs</span>
-              <span class="text-[10px] bg-[#E8F8EE] text-green-600 px-2 py-0.5 rounded-full font-semibold">75%</span>
             </div>
             <i class="fa-regular fa-circle-check text-muted text-sm mb-2 block"></i>
-            <p class="text-3xl font-semibold text-charcoal font-display">9</p>
-            <p class="text-xs text-muted mt-1">Actifs ce trimestre</p>
+            <p class="text-3xl font-semibold text-charcoal font-display">${totalClientsActifs}</p>
+            <p class="text-xs text-muted mt-1">Comptes actifs configurés</p>
           </div>
 
           <div class="bg-white rounded-xl p-5 border border-gray-100">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs text-muted uppercase tracking-wider">Valeur Cumulée</span>
-              <span class="text-[10px] bg-gray-100 text-muted px-2 py-0.5 rounded-full font-semibold">Total</span>
             </div>
             <i class="fa-regular fa-credit-card text-muted text-sm mb-2 block"></i>
-            <p class="text-3xl font-semibold text-charcoal font-display">88.020.000</p>
-            <p class="text-xs text-muted mt-1">FCFA générés</p>
+            <p class="text-3xl font-semibold text-charcoal font-display">${sommeChiffreAffaires}</p>
+            <p class="text-xs text-muted mt-1">FCFA cumulés en compte</p>
           </div>
 
         </div>
@@ -217,19 +233,13 @@ export function afficherPageClients(prenomUtilisateur) {
 
       </main>
 
-      <!-- ── Footer ── -->
+      <!-- Footer -->
       <footer id="footer" class="bg-white border-t border-gray-100 mt-auto">
         <div class="max-w-6xl mx-auto px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div class="flex items-center gap-2">
             <span class="font-display text-lg font-semibold text-charcoal">DecoFlow</span>
             <span class="text-xs text-muted">© 2024 DecoFlow. L'excellence de design sénégalaise.</span>
           </div>
-          <nav class="flex items-center gap-5">
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Mentions Légales</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Confidentialité</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Aide</a>
-            <a href="#" class="text-xs text-muted hover:text-charcoal transition">Contact</a>
-          </nav>
         </div>
       </footer>
 
@@ -240,8 +250,6 @@ export function afficherPageClients(prenomUtilisateur) {
   attacherEcouteursClients(prenom);
   attacherNavigationNavbar(prenom);
 }
-
-
 
 // ─── Rendu tableau ────────────────────────────────────────────────────────────
 
@@ -382,7 +390,6 @@ function attacherEcouteursClients(prenom) {
 
   // Recherche live
   var champRecherche = document.getElementById('champ-recherche-clients');
-
   if (champRecherche) {
     champRecherche.addEventListener('input', function() {
       filtreRechercheClients = champRecherche.value;

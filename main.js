@@ -1,96 +1,144 @@
-import { afficherPageAccueil }      from "./accueil.js";
-import { afficherPageConnexion }    from "./connexion.js";
-import { afficherPageInscription }  from "./inscription.js";
-import { afficherPageDashboard }    from "./dashboard.js";
-import { afficherPageCategories }   from "./categories.js";
-import { afficherPageProfil }       from "./profil.js";
-import { afficherPageDevis }        from "./devis.js";
-import { afficherPageProduits }     from "./produits.js";
-import { afficherPageCommandes }    from "./commandes.js";
-import { afficherPagePanier }       from "./panier.js";
-import { afficherPageClients }      from "./clients.js";
-import { afficherPageAdminPanel }   from "./admin.js";
-import { afficherPageSuperadmin }   from "./superadmin.js";
-import { lireSession, supprimerSession } from "./db.js";
+import { lireSession, supprimerSession } from './db.js';
+
+// ─── Session ──────────────────────────────────────────────────────────────────
 
 var session = lireSession();
-var ROLES_VALIDES = ["client", "admin", "superadmin"];
-var PAGES_CONNECTEES = ["dashboard", "categories", "profil", "produits", "devis", "commandes", "panier"];
+var ROLES_VALIDES = ['client', 'admin', 'superadmin'];
 
 function sessionValide(s) {
   return Boolean(s && s.email && s.nom && ROLES_VALIDES.includes(s.role));
 }
-function estConnecte()  { return sessionValide(session); }
-function lireRole()     { return session ? session.role : null; }
-function lireUserId()   { return session ? (session.id || session.userId || null) : null; }
+function estConnecte() { return sessionValide(session); }
+function lireRole()    { return session ? session.role : null; }
+function lireUserId()  { return session ? (session.id || session.userId || null) : null; }
 
 function rafraichirSession() {
   session = lireSession();
   if (session && !sessionValide(session)) { supprimerSession(); session = null; }
 }
 
-function gardePublique() { if (estConnecte()) { rendrePage("dashboard", session.nom); return false; } return true; }
-function gardeConnecte() { if (!estConnecte()) { rendrePage("connexion"); return false; } return true; }
+// ─── Gardes ───────────────────────────────────────────────────────────────────
+// Retourne true  -> on rend la page demandée
+// Retourne string-> on redirige vers cette page (via changement de hash)
+// Retourne false -> bloqué silencieusement
+
+function gardePublique() {
+  return estConnecte() ? 'dashboard' : true;
+}
+function gardeConnecte() {
+  return estConnecte() ? true : 'connexion';
+}
 function gardeAdmin() {
-  if (!estConnecte()) { rendrePage("connexion"); return false; }
+  if (!estConnecte()) return 'connexion';
   var r = lireRole();
-  if (r !== "admin" && r !== "superadmin") { alert("Accès refusé."); rendrePage("dashboard", session.nom); return false; }
+  if (r !== 'admin' && r !== 'superadmin') { alert('Accès refusé.'); return 'dashboard'; }
   return true;
 }
 function gardeSuperadmin() {
-  if (!estConnecte()) { rendrePage("connexion"); return false; }
-  if (lireRole() !== "superadmin") { rendrePage("dashboard", session.nom); return false; }
-  return true;
+  if (!estConnecte()) return 'connexion';
+  return lireRole() === 'superadmin' ? true : 'dashboard';
 }
 
-function normaliserPage(page) { return (page || "").replace("#", "").trim() || null; }
-function nomFallback(nom) { return nom || (session && session.nom) || undefined; }
+// ─── Table des routes ─────────────────────────────────────────────────────────
 
-function rendrePage(page, nom) {
-  var role   = lireRole() || "client";
-  var userId = lireUserId();
-  var prenom = nomFallback(nom);
+const ROUTES = {
+  'accueil':           { module: './accueil.js',       fonction: 'afficherPageAccueil' },
+  'connexion':         { module: './connexion.js',     fonction: 'afficherPageConnexion',    garde: gardePublique },
+  'inscription':       { module: './inscription.js',   fonction: 'afficherPageInscription',  garde: gardePublique },
+  'dashboard':         { module: './dashboard.js',     fonction: 'afficherPageDashboard',    garde: gardeConnecte },
+  'categories':        { module: './categories.js',    fonction: 'afficherPageCategories',   garde: gardeConnecte },
+  'profil':            { module: './profil.js',        fonction: 'afficherPageProfil',       garde: gardeConnecte },
+  'produits':          { module: './produits.js',      fonction: 'afficherPageProduits',     garde: gardeConnecte },
+  'devis':             { module: './devis.js',         fonction: 'afficherPageDevis',        garde: gardeConnecte },
+  'commandes':         { module: './commandes.js',     fonction: 'afficherPageCommandes',    garde: gardeConnecte },
+  'panier':            { module: './panier.js',        fonction: 'afficherPagePanier',       garde: gardeConnecte },
+  'clients':           { module: './clients.js',       fonction: 'afficherPageClients',      garde: gardeAdmin },
+  'admin-panel':       { module: './admin.js',         fonction: 'afficherPageAdminPanel',   garde: gardeAdmin },
+  'superadmin-panel':  { module: './superadmin.js',    fonction: 'afficherPageSuperadmin',   garde: gardeSuperadmin }
+};
 
-  var routes = {
-    accueil:              function () { afficherPageAccueil(); },
-    connexion:            function () { afficherPageConnexion(); },
-    inscription:          function () { afficherPageInscription(); },
-    dashboard:            function () { afficherPageDashboard(prenom, role, userId); },
-    categories:           function () { afficherPageCategories(prenom, role, userId); },
-    profil:               function () { afficherPageProfil(prenom, role, userId); },
-    produits:             function () { afficherPageProduits(prenom, role, userId); },
-    devis:                function () { afficherPageDevis(prenom, role, userId); },
-    commandes:            function () { afficherPageCommandes(prenom, role, userId); },
-    panier:               function () { afficherPagePanier(prenom, role, userId); },
-    clients:              function () { afficherPageClients(prenom, role, userId); },
-    "admin-panel":        function () { afficherPageAdminPanel(prenom, role, userId); },
-    "superadmin-panel":   function () { afficherPageSuperadmin(prenom, role, userId); }
-  };
-  (routes[page] || routes.accueil)();
+// ─── Hooks after render ───────────────────────────────────────────────────────
+
+var hooksApresRendu = [];
+export function apresRendu(hook) { hooksApresRendu.push(hook); }
+
+function declencherApresRendu(ctx) {
+  for (var i = 0; i < hooksApresRendu.length; i++) {
+    try { hooksApresRendu[i](ctx); } catch (e) { console.error('afterRender:', e); }
+  }
 }
 
-export function naviguerVers(page, nom) {
+// Hook par défaut : scroll en haut + titre
+apresRendu(function (ctx) {
+  window.scrollTo(0, 0);
+  document.title = 'DecoFlow — ' + ctx.page;
+});
+
+// ─── Routeur ──────────────────────────────────────────────────────────────────
+
+var pageActuelle = null;
+
+function redirigerVers(page) {
+  if (window.location.hash.replace('#', '') === page) {
+    gererRoutage(); // même hash, on relance manuellement
+  } else {
+    window.location.hash = '#' + page; // déclenche hashchange -> gererRoutage
+  }
+}
+
+async function gererRoutage() {
   rafraichirSession();
-  var p = normaliserPage(page) || (estConnecte() ? "dashboard" : "accueil");
 
-  if (p === "connexion" || p === "inscription")     { if (gardePublique())   rendrePage(p, nom); return; }
-  if (PAGES_CONNECTEES.includes(p))                 { if (gardeConnecte())   rendrePage(p, nom); return; }
-  if (p === "admin-panel" || p === "clients")       { if (gardeAdmin())      rendrePage(p, nom); return; }
-  if (p === "superadmin-panel")                     { if (gardeSuperadmin()) rendrePage(p, nom); return; }
-  if (p === "accueil")                              { rendrePage("accueil"); return; }
+  var hash = window.location.hash.replace('#', '') || (estConnecte() ? 'dashboard' : 'accueil');
+  var conteneurApp = document.getElementById('app');
+  if (!conteneurApp) return;
 
-  rendrePage(estConnecte() ? "dashboard" : "accueil", nomFallback(nom));
+  var route = ROUTES[hash];
+
+  if (!route) {
+    conteneurApp.innerHTML = '<h1 class="text-2xl font-bold text-gray-700">404 - Page Introuvable</h1>';
+    return;
+  }
+
+  // Garde
+  if (typeof route.garde === 'function') {
+    var resultat = route.garde();
+    if (resultat === false) return;
+    if (typeof resultat === 'string' && resultat !== hash) { redirigerVers(resultat); return; }
+  }
+
+  try {
+    var module = await import(route.module);
+    var fn = module[route.fonction];
+    if (typeof fn !== 'function') throw new Error('Fonction ' + route.fonction + ' introuvable dans ' + route.module);
+
+    var prenom = session ? session.nom : undefined;
+    var role   = lireRole() || 'client';
+    var userId = lireUserId();
+
+    fn(prenom, role, userId);
+    pageActuelle = hash;
+
+    // After render
+    queueMicrotask(function () {
+      declencherApresRendu({
+        page:    hash,
+        prenom:  prenom,
+        role:    role,
+        userId:  userId,
+        session: session
+      });
+    });
+  } catch (erreur) {
+    console.error('Erreur lors du chargement de la page [' + hash + '] :', erreur);
+    conteneurApp.innerHTML = '<h1 class="text-red-500 font-bold">Erreur de chargement de la page.</h1>';
+  }
 }
 
-function naviguerDepuisHistorique(page, nom) {
-  var orig = history.pushState;
-  history.pushState = function (etat, titre, url) { history.replaceState(etat, titre, url); };
-  try { naviguerVers(page, nom); } finally { history.pushState = orig; }
-}
+// ─── API publique ─────────────────────────────────────────────────────────────
 
-function naviguerDepuisHashInitial() {
-  var p = normaliserPage(window.location.hash) || (estConnecte() ? "dashboard" : "accueil");
-  naviguerVers(p, session && session.nom);
+export function naviguerVers(page /*, nom */) {
+  redirigerVers(page || (estConnecte() ? 'dashboard' : 'accueil'));
 }
 
 export function verifierSessionSecurisee() { rafraichirSession(); return estConnecte(); }
@@ -98,25 +146,19 @@ export function verifierSessionSecurisee() { rafraichirSession(); return estConn
 export function deconnecter() {
   supprimerSession();
   session = null;
-  rendrePage("connexion");
+  redirigerVers('connexion');
 }
 
 window.decoflowRouter = {
-  naviguerVers: naviguerVers,
-  deconnecter: deconnecter,
+  naviguerVers:             naviguerVers,
+  deconnecter:              deconnecter,
   verifierSessionSecurisee: verifierSessionSecurisee,
-  lireSessionActive: function () { rafraichirSession(); return session; }
+  lireSessionActive:        function () { rafraichirSession(); return session; },
+  apresRendu:               apresRendu,
+  pageActuelle:             function () { return pageActuelle; }
 };
 
-rafraichirSession();
-if (!window.location.hash) window.location.hash = '#accueil';
-naviguerDepuisHashInitial();
+// ─── Démarrage ────────────────────────────────────────────────────────────────
 
-window.addEventListener("popstate", function (e) {
-  rafraichirSession();
-  if (!e.state || !e.state.page) {
-    naviguerDepuisHistorique(window.location.hash, session && session.nom);
-    return;
-  }
-  naviguerDepuisHistorique(e.state.page, e.state.nom);
-});
+window.addEventListener('hashchange',     gererRoutage);
+window.addEventListener('DOMContentLoaded', gererRoutage);
