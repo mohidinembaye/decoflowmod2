@@ -1,6 +1,6 @@
 // ─── Configuration ────────────────────────────────────────────────────────────
 
-const API_BASE        = 'http://localhost:3001';
+var API_BASE = 'https://ton-app.onrender.com';
 const API_URL         = API_BASE + '/utilisateurs';
 const API_PRODUITS    = API_BASE + '/produits';
 const API_COMMANDES   = API_BASE + '/commandes';
