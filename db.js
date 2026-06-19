@@ -1,6 +1,6 @@
 // ─── Configuration ────────────────────────────────────────────────────────────
 
-var API_BASE = 'https://ton-app.onrender.com';
+var API_BASE = 'https://decoflow.onrender.com';
 const API_URL         = API_BASE + '/utilisateurs';
 const API_PRODUITS    = API_BASE + '/produits';
 const API_COMMANDES   = API_BASE + '/commandes';
